@@ -1,0 +1,46 @@
+package mrriegel.portals.tile;
+
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+
+public class TileFrame extends TileBase {
+
+	private BlockPos controller;
+
+	@Override
+	public void readFromNBT(NBTTagCompound compound) {
+		super.readFromNBT(compound);
+		if (compound.hasKey("controller"))
+			controller = BlockPos.fromLong(compound.getLong("controller"));
+		else
+			controller = null;
+	}
+
+	@Override
+	public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+		if (controller != null)
+			compound.setLong("controller", controller.toLong());
+		return super.writeToNBT(compound);
+	}
+
+	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
+		
+	}
+
+	public BlockPos getController() {
+		return controller;
+	}
+
+	public void setController(BlockPos controller) {
+		this.controller = controller;
+	}
+}

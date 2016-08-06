@@ -8,6 +8,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.stats.StatList;
 import net.minecraft.tileentity.TileEntity;
@@ -40,7 +41,7 @@ public class BlockController extends BlockContainer {
 	@Override
 	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
 		if (worldIn.getTileEntity(pos) instanceof TileController) {
-			((TileController) worldIn.getTileEntity(pos)).scanFrame();
+//			((TileController) worldIn.getTileEntity(pos)).scanFrame();
 		}
 	}
 
@@ -51,6 +52,8 @@ public class BlockController extends BlockContainer {
 		} else {
 			TileEntity tileentity = worldIn.getTileEntity(pos);
 			if (tileentity instanceof TileController) {
+				if(playerIn.getHeldItemMainhand()!=null&&playerIn.getHeldItemMainhand().getItem()==Items.STICK)
+				((TileController) worldIn.getTileEntity(pos)).scanFrame();
 				playerIn.openGui(Portals.instance, 0, worldIn, pos.getX(), pos.getY(), pos.getZ());
 			}
 			return true;

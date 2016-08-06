@@ -3,6 +3,7 @@ package mrriegel.portals;
 import mrriegel.portals.blocks.BlockPortaal;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.proxy.CommonProxy;
+import mrriegel.portals.tile.TileController;
 import net.minecraft.init.Items;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.MinecraftForge;
@@ -51,8 +52,9 @@ public class Portals {
 	
 	@SubscribeEvent
 	public void x(PlayerInteractEvent.RightClickBlock e){
-		if(!e.getWorld().isRemote&&e.getEntityPlayer().getHeldItemMainhand()!=null&&e.getEntityPlayer().getHeldItemMainhand().getItem()==Items.STICK){
-			e.getWorld().setBlockState(e.getPos().offset(e.getFace()), ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, e.getFace().getAxis()));
+		if(!e.getWorld().isRemote&&e.getEntityPlayer().getHeldItemMainhand()!=null&&e.getEntityPlayer().getHeldItemMainhand().getItem()==Items.STICK&&e.getWorld().getBlockState(e.getPos())==ModBlocks.controller){
+//			((TileController)e.getWorld().getTileEntity(e.getPos())).scanFrame();
+//			e.getWorld().setBlockState(e.getPos().offset(e.getFace()), ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, e.getFace().getAxis()));
 		}
 	}
 

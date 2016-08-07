@@ -7,6 +7,7 @@ import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -41,7 +42,14 @@ public class BlockController extends BlockContainer {
 	@Override
 	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
 		if (worldIn.getTileEntity(pos) instanceof TileController) {
-//			((TileController) worldIn.getTileEntity(pos)).scanFrame();
+			((TileController) worldIn.getTileEntity(pos)).validatePortal();
+		}
+	}
+
+	@Override
+	public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
+		if (worldIn.getTileEntity(pos) instanceof TileController) {
+			((TileController) worldIn.getTileEntity(pos)).validatePortal();
 		}
 	}
 
@@ -52,8 +60,17 @@ public class BlockController extends BlockContainer {
 		} else {
 			TileEntity tileentity = worldIn.getTileEntity(pos);
 			if (tileentity instanceof TileController) {
-				if(playerIn.getHeldItemMainhand()!=null&&playerIn.getHeldItemMainhand().getItem()==Items.STICK)
-				((TileController) worldIn.getTileEntity(pos)).scanFrame();
+				TileController tile = (TileController) worldIn.getTileEntity(pos);
+				if (playerIn.getHeldItemMainhand() != null) {
+					if (playerIn.getHeldItemMainhand().getItem() == Items.STICK) {
+						if (!tile.isActive())
+							tile.activate(playerIn);
+						else
+							tile.deactivate();
+					}else if (playerIn.getHeldItemMainhand().getItem() == Items.WHEAT_SEEDS) {
+						System.out.println("active: "+tile.isActive());
+					}
+				}
 				playerIn.openGui(Portals.instance, 0, worldIn, pos.getX(), pos.getY(), pos.getZ());
 			}
 			return true;

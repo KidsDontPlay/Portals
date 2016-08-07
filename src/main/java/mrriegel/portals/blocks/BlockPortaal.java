@@ -50,8 +50,8 @@ public class BlockPortaal extends BlockBreakable implements IBlockColor, ITileEn
 		this.setDefaultState(this.blockState.getBaseState().withProperty(AXIS, EnumFacing.Axis.X));
 		setRegistryName("portaal");
 		setUnlocalizedName(getRegistryName().toString());
-//		setBlockUnbreakable();
-//		setResistance(6000000.0F);
+		setBlockUnbreakable();
+		setResistance(600000F);
 	}
 
 	public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source, BlockPos pos) {
@@ -191,7 +191,8 @@ public class BlockPortaal extends BlockBreakable implements IBlockColor, ITileEn
 	@Override
 	public int colorMultiplier(IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) {
 //		return 0x9bb8fb;
-		return 0xFFFFfF;
+//		return 0xFFFFfF;
+		return 0x0;
 	}
 
 	@Override
@@ -199,6 +200,7 @@ public class BlockPortaal extends BlockBreakable implements IBlockColor, ITileEn
 		// if(!worldIn.isRemote)
 		// entityIn.setPositionAndUpdate(pos.getX()+4, pos.getY()+4,
 		// pos.getZ()+4);
+		entityIn.getEntityData().setBoolean("in", true);
 	}
 
 	@Override
@@ -208,8 +210,9 @@ public class BlockPortaal extends BlockBreakable implements IBlockColor, ITileEn
 	@Override
 	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
 		if (worldIn.getTileEntity(pos) instanceof TilePortaal && ((TilePortaal) worldIn.getTileEntity(pos)).getController() != null && worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) instanceof TileController) {
-			((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).refresh();
-		}
+			((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).validatePortal();
+		}else
+			worldIn.setBlockToAir(pos);
 	}
 
 	@Override

@@ -3,6 +3,7 @@ package mrriegel.portals.blocks;
 import mrriegel.portals.Portals;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TileFrame;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -27,11 +28,23 @@ public class BlockFrame extends BlockContainer {
 
 	@Override
 	public TileEntity createNewTileEntity(World worldIn, int meta) {
-		return new TileController();
+		return new TileFrame();
 	}
 
 	public EnumBlockRenderType getRenderType(IBlockState state) {
 		return EnumBlockRenderType.MODEL;
+	}
+
+	@Override
+	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
+		TileEntity tileentity = worldIn.getTileEntity(pos);
+		if (tileentity instanceof TileFrame && ((TileFrame) tileentity).getController() != null) {
+			BlockPos con = ((TileFrame) tileentity).getController();
+			if (worldIn.getTileEntity(con) instanceof TileController)
+				((TileController) worldIn.getTileEntity(con)).validatePortal();
+			else
+				((TileFrame) tileentity).setController(null);;
+		}
 	}
 
 	@Override
@@ -44,8 +57,12 @@ public class BlockFrame extends BlockContainer {
 				BlockPos con = ((TileFrame) tileentity).getController();
 				if (worldIn.getTileEntity(con) instanceof TileController)
 					playerIn.openGui(Portals.instance, 0, worldIn, con.getX(), con.getY(), con.getZ());
+				else
+					((TileFrame) tileentity).setController(null);
+				return true;
 			}
-			return true;
+			return false;
 		}
 	}
+
 }

@@ -1,11 +1,5 @@
 package mrriegel.portals.tile;
 
-import java.util.Set;
-
-import com.google.common.collect.Sets;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
@@ -44,10 +38,4 @@ public class TileFrame extends TileBase {
 		this.controller = controller;
 	}
 
-	@Override
-	public void onChunkUnload() {
-		if (controller != null && worldObj.getTileEntity(controller) instanceof TileController) {
-			((TileController) worldObj.getTileEntity(controller)).validatePortal();
-		}
-	}
 }

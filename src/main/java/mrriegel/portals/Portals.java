@@ -1,7 +1,11 @@
 package mrriegel.portals;
 
 import mrriegel.portals.proxy.CommonProxy;
+import mrriegel.portals.tile.TileController;
+import mrriegel.portals.tile.TileFrame;
+import mrriegel.portals.tile.TilePortaal;
 import net.minecraft.init.Items;
+import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -53,6 +57,11 @@ public class Portals {
 	@SubscribeEvent
 	public void x(PlayerInteractEvent.RightClickBlock e) {
 		if (!e.getWorld().isRemote && e.getEntityPlayer().getHeldItemMainhand() != null && e.getEntityPlayer().getHeldItemMainhand().getItem() == Items.STICK) {
+			if (e.getWorld().getTileEntity(e.getPos()) instanceof TilePortaal && ((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController() != null) {
+				BlockPos pp = ((TileController) e.getWorld().getTileEntity(((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController())).getSelfLanding();
+				e.getEntityPlayer().setPositionAndUpdate(pp.getX() + .5, pp.getY() + .05, pp.getZ() + .5);
+				System.out.println("aber");
+			}
 			// ((TileController)e.getWorld().getTileEntity(e.getPos())).scanFrame();
 			// e.getWorld().setBlockState(e.getPos().offset(e.getFace()),
 			// ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS,

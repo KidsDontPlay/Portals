@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack;
 public class ItemUpgrade extends Item {
 
 	public enum Upgrade {
-		CAMOUFLAGE, DIRECTION, PARTICLE, REDSTONE, ITEM, FLUID, ENERGY;
+		CAMOUFLAGE, DIRECTION, MOTION, PARTICLE, REDSTONE, ITEM, FLUID, ENERGY;
 	}
 
 	public ItemUpgrade() {

@@ -31,6 +31,7 @@ public class BlockFrame extends BlockContainer {
 		return new TileFrame();
 	}
 
+	@Override
 	public EnumBlockRenderType getRenderType(IBlockState state) {
 		return EnumBlockRenderType.MODEL;
 	}
@@ -43,7 +44,7 @@ public class BlockFrame extends BlockContainer {
 			if (worldIn.getTileEntity(con) instanceof TileController)
 				((TileController) worldIn.getTileEntity(con)).validatePortal();
 			else
-				((TileFrame) tileentity).setController(null);;
+				((TileFrame) tileentity).setController(null);
 		}
 	}
 

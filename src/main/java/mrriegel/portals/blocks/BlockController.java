@@ -1,5 +1,7 @@
 package mrriegel.portals.blocks;
 
+import mrriegel.portals.PortalData;
+import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.Portals;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.block.Block;
@@ -7,14 +9,10 @@ import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.stats.StatList;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityDispenser;
-import net.minecraft.tileentity.TileEntityDropper;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -35,6 +33,7 @@ public class BlockController extends BlockContainer {
 		return new TileController();
 	}
 
+	@Override
 	public EnumBlockRenderType getRenderType(IBlockState state) {
 		return EnumBlockRenderType.MODEL;
 	}
@@ -42,15 +41,26 @@ public class BlockController extends BlockContainer {
 	@Override
 	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
 		if (worldIn.getTileEntity(pos) instanceof TileController) {
+			TileController tile = (TileController) worldIn.getTileEntity(pos);
+			tile.validatePortal();
+			if (worldIn.isBlockPowered(pos) && !tile.isActive())
+				tile.activate(null);
+			else if (!worldIn.isBlockPowered(pos) && tile.isActive())
+				tile.deactivate();
+		}
+	}
+
+	@Override
+	public void onBlockAdded(World worldIn, BlockPos pos, IBlockState state) {
+		if (worldIn.getTileEntity(pos) instanceof TileController) {
 			((TileController) worldIn.getTileEntity(pos)).validatePortal();
 		}
 	}
 
 	@Override
-	public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
-		if (worldIn.getTileEntity(pos) instanceof TileController) {
-			((TileController) worldIn.getTileEntity(pos)).validatePortal();
-		}
+	public void breakBlock(World worldIn, BlockPos pos, IBlockState state) {
+		super.breakBlock(worldIn, pos, state);
+		PortalData.get(worldIn).remove(new GlobalBlockPos(pos, worldIn));
 	}
 
 	@Override
@@ -63,12 +73,8 @@ public class BlockController extends BlockContainer {
 				TileController tile = (TileController) worldIn.getTileEntity(pos);
 				if (playerIn.getHeldItemMainhand() != null) {
 					if (playerIn.getHeldItemMainhand().getItem() == Items.STICK) {
-						if (!tile.isActive())
-							tile.activate(playerIn);
-						else
-							tile.deactivate();
-					}else if (playerIn.getHeldItemMainhand().getItem() == Items.WHEAT_SEEDS) {
-						System.out.println("active: "+tile.isActive());
+					} else if (playerIn.getHeldItemMainhand().getItem() == Items.WHEAT_SEEDS) {
+						System.out.println("active: " + tile.isActive());
 					}
 				}
 				playerIn.openGui(Portals.instance, 0, worldIn, pos.getX(), pos.getY(), pos.getZ());

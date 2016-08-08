@@ -8,9 +8,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-
 public class TileBase extends TileEntity {
 	@Override
 	public NBTTagCompound getUpdateTag() {

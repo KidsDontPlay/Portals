@@ -27,7 +27,7 @@ public class TilePortaal extends TileBase {
 	}
 
 	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
-		
+
 	}
 
 	public BlockPos getController() {
@@ -37,14 +37,5 @@ public class TilePortaal extends TileBase {
 	public void setController(BlockPos controller) {
 		this.controller = controller;
 	}
-	
-	@Override
-	public void onChunkUnload() {
-		System.out.println("unlood");
-		if (controller != null && worldObj.getTileEntity(controller) instanceof TileController) {
-			((TileController) worldObj.getTileEntity(controller)).validatePortal();
-		}
-	}
-
 
 }

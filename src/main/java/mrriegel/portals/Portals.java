@@ -4,9 +4,13 @@ import mrriegel.portals.proxy.CommonProxy;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TileFrame;
 import mrriegel.portals.tile.TilePortaal;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -66,6 +70,12 @@ public class Portals {
 			// e.getWorld().setBlockState(e.getPos().offset(e.getFace()),
 			// ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS,
 			// e.getFace().getAxis()));
+		}
+	}
+	@SubscribeEvent
+	public void u(LivingUpdateEvent e){
+		if(!e.getEntityLiving().worldObj.isRemote&&e.getEntityLiving() instanceof EntityPlayer){
+//			System.out.println("hoh: "+e.getEntityLiving().motionY);
 		}
 	}
 

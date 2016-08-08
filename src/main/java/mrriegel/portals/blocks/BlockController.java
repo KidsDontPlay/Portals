@@ -3,6 +3,7 @@ package mrriegel.portals.blocks;
 import mrriegel.portals.PortalData;
 import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.Portals;
+import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
@@ -77,7 +78,7 @@ public class BlockController extends BlockContainer {
 						System.out.println("active: " + tile.isActive());
 					}
 				}
-				playerIn.openGui(Portals.instance, 0, worldIn, pos.getX(), pos.getY(), pos.getZ());
+				playerIn.openGui(Portals.instance, GuiHandler.PORTAL, worldIn, pos.getX(), pos.getY(), pos.getZ());
 			}
 			return true;
 		}

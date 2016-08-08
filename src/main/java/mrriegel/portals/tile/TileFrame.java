@@ -6,7 +6,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class TileFrame extends TileBase {
+public class TileFrame extends TileBase implements IPortalFrame {
 
 	private BlockPos controller;
 
@@ -36,6 +36,11 @@ public class TileFrame extends TileBase {
 
 	public void setController(BlockPos controller) {
 		this.controller = controller;
+	}
+
+	@Override
+	public TileController getTileController() {
+		return controller != null && worldObj.getTileEntity(controller) instanceof TileController ? (TileController) worldObj.getTileEntity(controller) : null;
 	}
 
 }

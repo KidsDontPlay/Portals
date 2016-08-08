@@ -1,6 +1,7 @@
 package mrriegel.portals.blocks;
 
 import mrriegel.portals.Portals;
+import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TileFrame;
 import net.minecraft.block.Block;
@@ -57,7 +58,7 @@ public class BlockFrame extends BlockContainer {
 			if (tileentity instanceof TileFrame && ((TileFrame) tileentity).getController() != null) {
 				BlockPos con = ((TileFrame) tileentity).getController();
 				if (worldIn.getTileEntity(con) instanceof TileController)
-					playerIn.openGui(Portals.instance, 0, worldIn, con.getX(), con.getY(), con.getZ());
+					playerIn.openGui(Portals.instance, GuiHandler.PORTAL, worldIn, con.getX(), con.getY(), con.getZ());
 				else
 					((TileFrame) tileentity).setController(null);
 				return true;

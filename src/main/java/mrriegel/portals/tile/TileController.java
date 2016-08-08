@@ -13,13 +13,16 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
@@ -30,7 +33,7 @@ import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
-public class TileController extends TileBase {
+public class TileController extends TileBase implements IPortalFrame {
 
 	private Set<BlockPos> frames = Sets.newHashSet(), portals = Sets.newHashSet();
 	private ItemStack[] stacks = new ItemStack[8];
@@ -311,8 +314,9 @@ public class TileController extends TileBase {
 		if (entity == null || !valid || !active || !isPortalActive(target))
 			return;
 		TileController tar = (TileController) target.getWorld().getTileEntity(target.getPos());
-		if (tar.selfLanding == null)
+		if (tar == null || tar.selfLanding == null)
 			return;
+		Vec3d before = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
 		if (entity.worldObj.provider.getDimension() == target.getDimension()) {
 			entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() + .5);
 		} else {
@@ -325,6 +329,17 @@ public class TileController extends TileBase {
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			entity.setRotationYawHead(tar.looking.getHorizontalAngle());
 		}
+		if (tar.getUpgrades().contains(Upgrade.MOTION)) {
+			entity.motionX = before.xCoord;
+			entity.motionY = before.yCoord;
+			entity.motionZ = before.zCoord;
+		} else {
+			entity.motionX = 0;
+			entity.motionY = 0;
+			entity.motionZ = 0;
+		}
+		if (entity instanceof EntityPlayerMP)
+			((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity));
 
 	}
 
@@ -578,5 +593,10 @@ public class TileController extends TileBase {
 		public PortalException(String msg) {
 			super(msg);
 		}
+	}
+
+	@Override
+	public TileController getTileController() {
+		return this;
 	}
 }

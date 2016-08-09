@@ -71,13 +71,7 @@ public class BlockController extends BlockContainer {
 		} else {
 			TileEntity tileentity = worldIn.getTileEntity(pos);
 			if (tileentity instanceof TileController) {
-				TileController tile = (TileController) worldIn.getTileEntity(pos);
-				if (playerIn.getHeldItemMainhand() != null) {
-					if (playerIn.getHeldItemMainhand().getItem() == Items.STICK) {
-					} else if (playerIn.getHeldItemMainhand().getItem() == Items.WHEAT_SEEDS) {
-						System.out.println("active: " + tile.isActive());
-					}
-				}
+//				TileController tile = (TileController) worldIn.getTileEntity(pos);
 				playerIn.openGui(Portals.instance, GuiHandler.PORTAL, worldIn, pos.getX(), pos.getY(), pos.getZ());
 			}
 			return true;

@@ -9,7 +9,13 @@ import net.minecraft.item.ItemStack;
 public class ItemUpgrade extends Item {
 
 	public enum Upgrade {
-		CAMOUFLAGE, DIRECTION, MOTION, PARTICLE, REDSTONE, ITEM, FLUID, ENERGY;
+		CAMOUFLAGE(true), DIRECTION(true), MOTION(false), PARTICLE(true), REDSTONE(true), ITEM(true), FLUID(true), ENERGY(true);
+		
+		public boolean hasButton;
+
+		private Upgrade(boolean hasButton) {
+			this.hasButton = hasButton;
+		}
 	}
 
 	public ItemUpgrade() {

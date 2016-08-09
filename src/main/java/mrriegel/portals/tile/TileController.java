@@ -1,5 +1,7 @@
 package mrriegel.portals.tile;
 
+import java.math.BigInteger;
+import java.util.Random;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -27,6 +29,7 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 
 import com.google.common.collect.Sets;
@@ -40,7 +43,7 @@ public class TileController extends TileBase implements IPortalFrame {
 	// private EnumFacing face;
 	// private int index;
 	private boolean privat, active, valid;
-	private String owner;
+	private String owner, name = RandomStringUtils.random(10, true, true);
 	private GlobalBlockPos target;
 	private BlockPos selfLanding;
 	private int colorPortal = 0xffffff, colorParticle = 0xffffff;
@@ -61,23 +64,12 @@ public class TileController extends TileBase implements IPortalFrame {
 		}
 		if (valid) {
 			PortalData.get(worldObj).add(new GlobalBlockPos(pos, worldObj));
-			Set<BlockPos> selfs = Sets.newHashSet();
-			for (BlockPos p : portals) {
-				IBlockState a = worldObj.getBlockState(p);
-				IBlockState aPlus = worldObj.getBlockState(p.up());
-				IBlockState aMinus = worldObj.getBlockState(p.down());
-				if (a.getBlock().getCollisionBoundingBox(a, worldObj, p) == null && aPlus.getBlock().getCollisionBoundingBox(aPlus, worldObj, p.up()) == null && !portals.contains(p.down())) {
-					selfs.add(p);
-				}
-			}
-			if (selfs.isEmpty())
-				selfLanding = null;
-			else
-				selfLanding = selfs.iterator().next();
+			calculateLanding();
 		} else {
 			PortalData.get(worldObj).remove(new GlobalBlockPos(pos, worldObj));
 			selfLanding = null;
 		}
+		markDirty();
 		return valid;
 	}
 
@@ -87,6 +79,8 @@ public class TileController extends TileBase implements IPortalFrame {
 				player.addChatMessage(new TextComponentString("Invalid Portal Structure"));
 			return;
 		}
+//		if (target == null)
+//			return;
 		Axis a = null;
 		Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
 		for (BlockPos p : frames) {
@@ -122,6 +116,22 @@ public class TileController extends TileBase implements IPortalFrame {
 		active = false;
 		markDirty();
 
+	}
+
+	private void calculateLanding() {
+		Set<BlockPos> selfs = Sets.newHashSet();
+		for (BlockPos p : portals) {
+			IBlockState a = worldObj.getBlockState(p);
+			IBlockState aPlus = worldObj.getBlockState(p.up());
+			IBlockState aMinus = worldObj.getBlockState(p.down());
+			if (a.getBlock().getCollisionBoundingBox(a, worldObj, p) == null && aPlus.getBlock().getCollisionBoundingBox(aPlus, worldObj, p.up()) == null && !portals.contains(p.down())) {
+				selfs.add(p);
+			}
+		}
+		if (selfs.isEmpty())
+			selfLanding = null;
+		else
+			selfLanding = selfs.iterator().next();
 	}
 
 	boolean frameChanged(Set<BlockPos> set) {
@@ -222,8 +232,8 @@ public class TileController extends TileBase implements IPortalFrame {
 		return validFrame(p) || validPortalPos(p);
 	}
 
-	private boolean validNeighbors(BlockPos p, Set<EnumFacing> set) {
-		for (EnumFacing f : set)
+	private boolean validNeighbors(BlockPos p, Set<EnumFacing> faces) {
+		for (EnumFacing f : faces)
 			if (!validNeighbor(p.offset(f)))
 				return false;
 		return true;
@@ -448,6 +458,10 @@ public class TileController extends TileBase implements IPortalFrame {
 			owner = compound.getString("owner");
 		else
 			owner = null;
+		if (compound.hasKey("name"))
+			name = compound.getString("name");
+		else
+			name = null;
 		target = GlobalBlockPos.loadGlobalPosFromNBT(compound);
 		if (compound.hasKey("selfLanding"))
 			selfLanding = BlockPos.fromLong(compound.getLong("selfLanding"));
@@ -479,6 +493,8 @@ public class TileController extends TileBase implements IPortalFrame {
 		compound.setBoolean("valid", valid);
 		if (owner != null)
 			compound.setString("owner", owner);
+		if (name != null)
+			compound.setString("name", name);
 		if (target != null)
 			target.writeToNBT(compound);
 		if (selfLanding != null)
@@ -547,6 +563,14 @@ public class TileController extends TileBase implements IPortalFrame {
 
 	public void setOwner(String owner) {
 		this.owner = owner;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public GlobalBlockPos getTarget() {

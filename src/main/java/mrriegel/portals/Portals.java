@@ -12,6 +12,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
@@ -61,6 +62,8 @@ public class Portals {
 	@SubscribeEvent
 	public void x(PlayerInteractEvent.RightClickBlock e) {
 		if (!e.getWorld().isRemote && e.getEntityPlayer().getHeldItemMainhand() != null && e.getEntityPlayer().getHeldItemMainhand().getItem() == Items.STICK) {
+			FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(-1);
+//			System.out.println(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(-1).getBlockState(BlockPos.ORIGIN.west(400)).getBlock());
 			if (e.getWorld().getTileEntity(e.getPos()) instanceof TilePortaal && ((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController() != null) {
 				BlockPos pp = ((TileController) e.getWorld().getTileEntity(((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController())).getSelfLanding();
 				e.getEntityPlayer().setPositionAndUpdate(pp.getX() + .5, pp.getY() + .05, pp.getZ() + .5);

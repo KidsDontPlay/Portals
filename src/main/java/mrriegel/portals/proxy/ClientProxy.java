@@ -4,6 +4,8 @@ import java.util.Map;
 
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.tile.IPortalFrame;
+import mrriegel.portals.tile.TileController;
+import mrriegel.portals.tile.TilePortaal;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -23,6 +25,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.model.ModelLoader;
@@ -43,24 +46,33 @@ public class ClientProxy extends CommonProxy {
 		super.preInit(event);
 		ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(ModBlocks.controller), 0, new ModelResourceLocation(ModBlocks.controller.getRegistryName(), "inventory"));
 		ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(ModBlocks.frame), 0, new ModelResourceLocation(ModBlocks.frame.getRegistryName(), "inventory"));
-//		ModelLoader.setCustomStateMapper(ModBlocks.frame, new IStateMapper() {
-//			@Override
-//			public Map<IBlockState, ModelResourceLocation> putStateModelLocations(Block blockIn) {
-//				return Maps.newHashMap();
-//			}
-//		});
+		// ModelLoader.setCustomStateMapper(ModBlocks.frame, new IStateMapper()
+		// {
+		// @Override
+		// public Map<IBlockState, ModelResourceLocation>
+		// putStateModelLocations(Block blockIn) {
+		// return Maps.newHashMap();
+		// }
+		// });
 	}
 
 	@Override
 	public void init(FMLInitializationEvent event) {
 		super.init(event);
-//		MinecraftForge.EVENT_BUS.register(this);
+		// MinecraftForge.EVENT_BUS.register(this);
 	}
 
 	@Override
 	public void postInit(FMLPostInitializationEvent event) {
 		super.postInit(event);
-		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler((IBlockColor) ModBlocks.portaal, ModBlocks.portaal);
+		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(new IBlockColor() {
+			@Override
+			public int colorMultiplier(IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) {
+				if (worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) == null)
+					return 0;
+				return ((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getColorPortal();
+			}
+		}, ModBlocks.portaal);
 	}
 
 	@SubscribeEvent
@@ -72,9 +84,9 @@ public class ClientProxy extends CommonProxy {
 				World world = Minecraft.getMinecraft().theWorld;
 				BlockPos blockpos = tile.getPos();
 				IBlockState iblockstate = Blocks.EMERALD_BLOCK.getDefaultState();
-				double xx=(double)blockpos.getX()-TileEntityRendererDispatcher.staticPlayerX;
-				double yy=(double)blockpos.getY()-TileEntityRendererDispatcher.staticPlayerY;
-				double zz=(double)blockpos.getZ()-TileEntityRendererDispatcher.staticPlayerZ;
+				double xx = (double) blockpos.getX() - TileEntityRendererDispatcher.staticPlayerX;
+				double yy = (double) blockpos.getY() - TileEntityRendererDispatcher.staticPlayerY;
+				double zz = (double) blockpos.getZ() - TileEntityRendererDispatcher.staticPlayerZ;
 
 				GlStateManager.pushMatrix();
 				RenderHelper.disableStandardItemLighting();

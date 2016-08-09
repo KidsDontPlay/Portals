@@ -1,8 +1,11 @@
 package mrriegel.portals;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import mrriegel.portals.init.ModBlocks;
+import mrriegel.portals.tile.TileController;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -15,13 +18,14 @@ import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
 public class PortalData extends WorldSavedData {
 
-	private Set<GlobalBlockPos> valids = Sets.newHashSet();
+	public Set<GlobalBlockPos> valids = Sets.newHashSet();
 	private static final String DATA_NAME = "PortaalData";
 
 	public PortalData() {
@@ -38,6 +42,11 @@ public class PortalData extends WorldSavedData {
 		if (instance == null) {
 			instance = new PortalData();
 			storage.setData(DATA_NAME, instance);
+		}
+		instance.valids.removeAll(Collections.singleton(null));
+		for (GlobalBlockPos p : instance.valids) {
+			if (p.pos == null || !(p.getTile() instanceof TileController))
+				instance.remove(p);
 		}
 		return instance;
 	}
@@ -58,6 +67,33 @@ public class PortalData extends WorldSavedData {
 			return false;
 		}
 		return valids.contains(new GlobalBlockPos(pos, world));
+	}
+	
+	public List<String> getNames(){
+		List<String> lis=Lists.newArrayList();
+		for (GlobalBlockPos p : valids) {
+			if (validPos(p.getWorld(), p.getPos()))
+				lis.add(((TileController)p.getTile()).getName());
+		}
+		return lis;
+	}
+
+	public TileController getTile(String name) {
+		for (GlobalBlockPos p : valids) {
+			if (validPos(p.getWorld(), p.getPos()) && ((TileController) p.getTile()).getName().equals(name))
+				return (TileController) p.getTile();
+		}
+		return null;
+	}
+
+	public boolean nameOccupied(String name, GlobalBlockPos p) {
+		for (GlobalBlockPos pos : valids) {
+			if (pos.getTile() instanceof TileController && !pos.equals(p)) {
+				if (((TileController) pos.getTile()).getName().equals(name))
+					return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -89,6 +125,11 @@ public class PortalData extends WorldSavedData {
 		}
 
 		private GlobalBlockPos() {
+		}
+
+		@Override
+		public String toString() {
+			return "GlobalBlockPos [pos=" + pos + ", dimension=" + dimension + "]";
 		}
 
 		@Override

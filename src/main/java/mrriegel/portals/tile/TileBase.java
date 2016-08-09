@@ -1,6 +1,8 @@
 package mrriegel.portals.tile;
 
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
@@ -29,5 +31,20 @@ public class TileBase extends TileEntity {
 	@Override
 	public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
 		readFromNBT(pkt.getNbtCompound());
+	}
+
+	public void sync() {
+		markDirty();
+		if (!worldObj.isRemote)
+			for (EntityPlayer p : worldObj.playerEntities) {
+				if (p.getPosition().getDistance(pos.getX(), pos.getY(), pos.getZ()) < 32) {
+					try {
+						((EntityPlayerMP) p).connection.sendPacket(getUpdatePacket());
+					} catch (Error e) {
+						System.out.println(e.getMessage());
+						e.printStackTrace();
+					}
+				}
+			}
 	}
 }

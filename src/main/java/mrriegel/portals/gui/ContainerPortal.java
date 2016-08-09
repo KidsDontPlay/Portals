@@ -1,9 +1,11 @@
 package mrriegel.portals.gui;
 
+import mrriegel.portals.PortalData;
 import mrriegel.portals.init.ModItems;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.ClickType;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryBasic;
@@ -12,7 +14,7 @@ import net.minecraft.item.ItemStack;
 
 public class ContainerPortal extends Container {
 
-	TileController tile;
+	public TileController tile;
 	InventoryPlayer invPlayer;
 	InventoryBasic tmp;
 
@@ -50,6 +52,9 @@ public class ContainerPortal extends Container {
 		for (int l = 0; l < 9; ++l) {
 			this.addSlotToContainer(new Slot(invPlayer, l, 8 + l * 18, 214));
 		}
+		
+
+		System.out.println(PortalData.get(tile.getWorld()).valids);
 	}
 
 	@Override
@@ -61,7 +66,7 @@ public class ContainerPortal extends Container {
 	public void onContainerClosed(EntityPlayer playerIn) {
 		super.onContainerClosed(playerIn);
 		refresh();
-		tile.markDirty();
+		tile.sync();
 	}
 
 	private void refresh() {
@@ -69,11 +74,16 @@ public class ContainerPortal extends Container {
 			tile.getStacks()[i] = tmp.getStackInSlot(i);
 		}
 	}
-
+	
 	@Override
-	public void putStackInSlot(int slotID, ItemStack stack) {
-		super.putStackInSlot(slotID, stack);
+	public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player) {
 		refresh();
+		return super.slotClick(slotId, dragType, clickTypeIn, player);
+	}
+	
+	@Override
+	public ItemStack transferStackInSlot(EntityPlayer playerIn, int index) {
+		return null;
 	}
 
 }

@@ -33,7 +33,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class BlockPortaal extends BlockBreakable implements IBlockColor, ITileEntityProvider {
+public class BlockPortaal extends BlockBreakable implements ITileEntityProvider {
 	public static final PropertyEnum<EnumFacing.Axis> AXIS = PropertyEnum.<EnumFacing.Axis> create("axis", EnumFacing.Axis.class, new EnumFacing.Axis[] { EnumFacing.Axis.X, EnumFacing.Axis.Z, EnumFacing.Axis.Y });
 	protected static final AxisAlignedBB X_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.375D, 1.0D, 1.0D, 0.625D);
 	protected static final AxisAlignedBB Z_AABB = new AxisAlignedBB(0.375D, 0.0D, 0.0D, 0.625D, 1.0D, 1.0D);
@@ -148,7 +148,7 @@ public class BlockPortaal extends BlockBreakable implements IBlockColor, ITileEn
 			worldIn.playSound(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, SoundEvents.BLOCK_PORTAL_AMBIENT, SoundCategory.BLOCKS, 0.5F, rand.nextFloat() * 0.4F + 0.8F, false);
 		}
 		TileController tile = (TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController());
-		if (tile!=null&&tile.getUpgrades().contains(Upgrade.PARTICLE))
+		if (tile != null && tile.getUpgrades().contains(Upgrade.PARTICLE))
 			for (int i = 0; i < 4; ++i) {
 				double d0 = pos.getX() + rand.nextFloat();
 				double d1 = pos.getY() + rand.nextFloat();
@@ -169,35 +169,9 @@ public class BlockPortaal extends BlockBreakable implements IBlockColor, ITileEn
 			}
 	}
 
-	// public IBlockState withRotation(IBlockState state, Rotation rot) {
-	// switch (rot) {
-	// case COUNTERCLOCKWISE_90:
-	// case CLOCKWISE_90:
-	//
-	// switch ((EnumFacing.Axis) state.getValue(AXIS)) {
-	// case X:
-	// return state.withProperty(AXIS, EnumFacing.Axis.Z);
-	// case Z:
-	// return state.withProperty(AXIS, EnumFacing.Axis.X);
-	// default:
-	// return state;
-	// }
-	//
-	// default:
-	// return state;
-	// }
-	// }
-
 	@Override
 	protected BlockStateContainer createBlockState() {
 		return new BlockStateContainer(this, new IProperty[] { AXIS });
-	}
-
-	@Override
-	public int colorMultiplier(IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) {
-		if (worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) == null)
-			return 0;
-		return ((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getColorPortal();
 	}
 
 	@Override
@@ -205,7 +179,9 @@ public class BlockPortaal extends BlockBreakable implements IBlockColor, ITileEn
 		// if(!worldIn.isRemote)
 		// entityIn.setPositionAndUpdate(pos.getX()+4, pos.getY()+4,
 		// pos.getZ()+4);
-		entityIn.getEntityData().setBoolean("in", true);
+		if (!entityIn.isRiding() && !entityIn.isBeingRidden() && entityIn.isNonBoss() && entityIn.isEntityAlive())
+			entityIn.getEntityData().setBoolean("inPortaal", true);
+
 	}
 
 	@Override

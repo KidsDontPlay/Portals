@@ -4,6 +4,7 @@ import mrriegel.portals.Portals;
 import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.init.ModItems;
+import mrriegel.portals.network.PacketHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -19,6 +20,7 @@ public class CommonProxy {
 
 	public void init(FMLInitializationEvent event) {
 		NetworkRegistry.INSTANCE.registerGuiHandler(Portals.instance, new GuiHandler());
+		PacketHandler.init();
 	}
 
 	public void postInit(FMLPostInitializationEvent event) {

@@ -45,7 +45,7 @@ public class BlockController extends BlockContainer {
 			TileController tile = (TileController) worldIn.getTileEntity(pos);
 			tile.validatePortal();
 			if (worldIn.isBlockPowered(pos) && !tile.isActive())
-				tile.activate(null);
+				tile.activate();
 			else if (!worldIn.isBlockPowered(pos) && tile.isActive())
 				tile.deactivate();
 		}

@@ -12,6 +12,7 @@ public class PacketHandler {
 		int id = 0;
 		INSTANCE.registerMessage(MessageName.Handler.class, MessageName.class, id++, Side.SERVER);
 		INSTANCE.registerMessage(MessageButton.Handler.class, MessageButton.class, id++, Side.SERVER);
+		INSTANCE.registerMessage(MessageData.Handler.class, MessageData.class, id++, Side.CLIENT);
 
 	}
 }

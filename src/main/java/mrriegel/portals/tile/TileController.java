@@ -8,12 +8,14 @@ import javax.annotation.Nullable;
 
 import mrriegel.portals.PortalData;
 import mrriegel.portals.PortalData.GlobalBlockPos;
+import mrriegel.portals.PortalTeleporter;
 import mrriegel.portals.blocks.BlockPortaal;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
+import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -73,14 +75,14 @@ public class TileController extends TileBase implements IPortalFrame {
 		return valid;
 	}
 
-	public void activate(@Nullable EntityPlayer player) {
+	public boolean activate() {
 		if (!validatePortal()) {
-			if (player != null)
-				player.addChatMessage(new TextComponentString("Invalid Portal Structure"));
-			return;
+			return false;
 		}
-//		if (target == null)
-//			return;
+		// if (target == null)
+		// return false;
+		// if(!isPortalActive(target)){
+		// }
 		Axis a = null;
 		Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
 		for (BlockPos p : frames) {
@@ -101,6 +103,7 @@ public class TileController extends TileBase implements IPortalFrame {
 		}
 		active = true;
 		markDirty();
+		return true;
 
 	}
 
@@ -144,7 +147,12 @@ public class TileController extends TileBase implements IPortalFrame {
 		boolean valid = PortalData.get(pos.getWorld()).validPos(pos.getWorld(), pos.getPos());
 		if (!valid)
 			return false;
-		if (pos.getTile() instanceof TileController && ((TileController) pos.getTile()).isActive())
+		if (pos.getTile() instanceof TileController && ((TileController) pos.getTile()).isActive() // &&
+																									// ((TileController)
+																									// pos.getTile()).getTarget().equals(new
+																									// GlobalBlockPos(this.pos,
+																									// worldObj))
+		)
 			return true;
 		for (EnumFacing face : EnumFacing.VALUES) {
 			if (pos.getWorld().getBlockState(pos.getPos().offset(face)).getBlock() == ModBlocks.portaal)
@@ -321,20 +329,24 @@ public class TileController extends TileBase implements IPortalFrame {
 	}
 
 	public void teleport(Entity entity) {
-		if (entity == null || !valid || !active || !isPortalActive(target))
+		if (entity == null || !valid || !active || !isPortalActive(target) || entity.worldObj.isRemote)
 			return;
-		TileController tar = (TileController) target.getWorld().getTileEntity(target.getPos());
+		TileController tar = (TileController) target.getTile();
 		if (tar == null || tar.selfLanding == null)
 			return;
 		Vec3d before = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
 		if (entity.worldObj.provider.getDimension() == target.getDimension()) {
 			entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() + .5);
 		} else {
-			// entity.changeDimension(target.getDimension());
-			changeDimension(entity, target);
-			// entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5,
-			// tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() +
-			// .5);
+			System.out.println("bef: " + entity.worldObj.provider.getDimension());
+			if (entity instanceof EntityPlayerMP) {
+				((EntityPlayerMP) entity).closeContainer();
+				worldObj.getMinecraftServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP) entity, target.getDimension(), new PortalTeleporter((WorldServer) target.getWorld(), tar.selfLanding));
+			} else
+				worldObj.getMinecraftServer().getPlayerList().transferEntityToWorld(entity, entity.worldObj.provider.getDimension(), (WorldServer) entity.worldObj, (WorldServer) target.getWorld(), new PortalTeleporter((WorldServer) target.getWorld(), tar.selfLanding));
+			// target.getWorld().spawnEntityInWorld(entity);
+			// target.getWorld().updateEntityWithOptionalForce(entity, false);
+			System.out.println("aft: " + entity.worldObj.provider.getDimension());
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			entity.setRotationYawHead(tar.looking.getHorizontalAngle());
@@ -351,97 +363,6 @@ public class TileController extends TileBase implements IPortalFrame {
 		if (entity instanceof EntityPlayerMP)
 			((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity));
 
-	}
-
-	private void changeDimension(Entity entityTP, GlobalBlockPos pos) {
-		TileController tar = (TileController) target.getWorld().getTileEntity(target.getPos());
-		if (!entityTP.worldObj.isRemote && !entityTP.isDead && tar != null) {
-			int dimensionIn = pos.getDimension();
-			if (!net.minecraftforge.common.ForgeHooks.onTravelToDimension(entityTP, dimensionIn))
-				return;
-			entityTP.worldObj.theProfiler.startSection("changeDimension");
-			MinecraftServer minecraftserver = entityTP.getServer();
-			int i = entityTP.dimension;
-			WorldServer currentServer = minecraftserver.worldServerForDimension(i);
-			WorldServer targetServer = minecraftserver.worldServerForDimension(dimensionIn);
-			entityTP.dimension = dimensionIn;
-
-			// if (i == 1 && dimensionIn == 1) {
-			// targetServer = minecraftserver.worldServerForDimension(0);
-			// entityTP.dimension = 0;
-			// }
-
-			entityTP.worldObj.removeEntity(entityTP);
-			entityTP.isDead = false;
-			entityTP.worldObj.theProfiler.startSection("reposition");
-			// BlockPos blockpos;
-			//
-			// if (dimensionIn == 1) {
-			// blockpos = targetServer.getSpawnCoordinate();
-			// } else {
-			// double d0 = entityTP.posX;
-			// double d1 = entityTP.posZ;
-			// double d2 = 8.0D;
-			//
-			// if (dimensionIn == -1) {
-			// d0 = MathHelper.clamp_double(d0 / 8.0D,
-			// targetServer.getWorldBorder().minX() + 16.0D,
-			// targetServer.getWorldBorder().maxX() - 16.0D);
-			// d1 = MathHelper.clamp_double(d1 / 8.0D,
-			// targetServer.getWorldBorder().minZ() + 16.0D,
-			// targetServer.getWorldBorder().maxZ() - 16.0D);
-			// } else if (dimensionIn == 0) {
-			// d0 = MathHelper.clamp_double(d0 * 8.0D,
-			// targetServer.getWorldBorder().minX() + 16.0D,
-			// targetServer.getWorldBorder().maxX() - 16.0D);
-			// d1 = MathHelper.clamp_double(d1 * 8.0D,
-			// targetServer.getWorldBorder().minZ() + 16.0D,
-			// targetServer.getWorldBorder().maxZ() - 16.0D);
-			// }
-			//
-			// d0 = (double) MathHelper.clamp_int((int) d0, -29999872,
-			// 29999872);
-			// d1 = (double) MathHelper.clamp_int((int) d1, -29999872,
-			// 29999872);
-			// float f = entityTP.rotationYaw;
-			// entityTP.setLocationAndAngles(d0, entityTP.posY, d1, 90.0F,
-			// 0.0F);
-			// Teleporter teleporter = targetServer.getDefaultTeleporter();
-			// teleporter.placeInExistingPortal(entityTP, f);
-			// blockpos = new BlockPos(entityTP);
-			// }
-
-			currentServer.updateEntityWithOptionalForce(entityTP, false);
-			entityTP.worldObj.theProfiler.endStartSection("reloading");
-			Entity entity = EntityList.createEntityByName(EntityList.getEntityString(entityTP), targetServer);
-
-			if (entity != null) {
-				// entity.copyDataFromOld(entity);
-
-				// if (i == 1 && dimensionIn == 1) {
-				// BlockPos blockpos1 =
-				// targetServer.getTopSolidOrLiquidBlock(targetServer.getSpawnPoint());
-				// entity.moveToBlockPosAndAngles(blockpos1, entity.rotationYaw,
-				// entity.rotationPitch);
-				// } else {
-				// entity.moveToBlockPosAndAngles(blockpos, entity.rotationYaw,
-				// entity.rotationPitch);
-				// }
-				entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() + .5);
-
-				boolean flag = entity.forceSpawn;
-				entity.forceSpawn = true;
-				targetServer.spawnEntityInWorld(entity);
-				entity.forceSpawn = flag;
-				targetServer.updateEntityWithOptionalForce(entity, false);
-			}
-
-			entityTP.isDead = true;
-			entityTP.worldObj.theProfiler.endSection();
-			currentServer.resetUpdateEntityTick();
-			targetServer.resetUpdateEntityTick();
-			entityTP.worldObj.theProfiler.endSection();
-		}
 	}
 
 	@Override

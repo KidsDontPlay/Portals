@@ -54,7 +54,7 @@ public class ContainerPortal extends Container {
 		}
 		
 
-		System.out.println(PortalData.get(tile.getWorld()).valids);
+		System.out.println(tile.getTarget());
 	}
 
 	@Override

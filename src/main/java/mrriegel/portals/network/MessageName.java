@@ -54,8 +54,10 @@ public class MessageName implements IMessage {
 						neu = "Occupied" + i;
 						i++;
 					}
-					((TileController) world.getTileEntity(message.pos)).setName(neu);
-					((TileController) world.getTileEntity(message.pos)).sync();
+					if (world.getTileEntity(message.pos) instanceof TileController) {
+						((TileController) world.getTileEntity(message.pos)).setName(neu);
+						((TileController) world.getTileEntity(message.pos)).sync();
+					}
 				}
 			});
 			return null;

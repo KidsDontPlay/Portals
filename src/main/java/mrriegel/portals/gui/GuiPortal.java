@@ -3,22 +3,26 @@ package mrriegel.portals.gui;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+
 import mrriegel.portals.PortalData;
+import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.Portals;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.network.MessageButton;
 import mrriegel.portals.network.MessageName;
 import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiLabel;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
+
 import org.lwjgl.input.Keyboard;
 
 import com.google.common.collect.Lists;
@@ -30,9 +34,6 @@ public class GuiPortal extends GuiContainer {
 	private GuiTextField name;
 	private TileController tile;
 
-	private List<String> tiles;
-	private List<GuiButtonExt> buttons;
-
 	public GuiPortal(Container inventorySlotsIn) {
 		super(inventorySlotsIn);
 		tile = ((ContainerPortal) inventorySlotsIn).tile;
@@ -43,9 +44,7 @@ public class GuiPortal extends GuiContainer {
 	protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		this.mc.getTextureManager().bindTexture(TEXTURE);
-		int i = (this.width - this.xSize) / 2;
-		int j = (this.height - this.ySize) / 2;
-		this.drawTexturedModalRect(i, j, 0, 0, this.xSize, this.ySize);
+		this.drawTexturedModalRect(guiLeft, guiTop, 0, 0, this.xSize, this.ySize);
 		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
 		for (int k = 0; k < inv.getSizeInventory(); k++) {
 			if (inv.getStackInSlot(k) == null || !Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {
@@ -58,6 +57,12 @@ public class GuiPortal extends GuiContainer {
 			}
 		}
 		name.drawTextBox();
+		for (GuiLabel label : labelList) {
+			if (((GuiLabelExt) label).isMouseOver())
+				((GuiLabelExt) label).setTextColor(0xfff0);
+			else
+				((GuiLabelExt) label).setTextColor(0xffffff);
+		}
 	}
 
 	@Override
@@ -80,26 +85,20 @@ public class GuiPortal extends GuiContainer {
 		name.setTextColor(16777215);
 		name.setText(((ContainerPortal) inventorySlots).tile.getName());
 		name.setFocused(true);
-		tiles = Lists.newArrayList(PortalData.get(tile.getWorld()).getNames());
-		System.out.println("s: " + tiles.size());
+		List<String> tiles = Lists.newArrayList(PortalData.get(tile.getWorld()).getNames());
+		tiles.remove(tile.getName());
 		Collections.sort(tiles);
-		buttons = Lists.newArrayList();
 		for (int i = 0; i < Math.min(4, tiles.size()); i++) {
-			buttons.add(new GuiButtonExt(i + 20, 72 + guiLeft, 38 + i * 18 + guiTop, 60, 16, "ne") {
-				@Override
-				public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
-					return this.visible && mouseX >= this.xPosition && mouseY >= this.yPosition && mouseX < this.xPosition + this.width && mouseY < this.yPosition + this.height;
-				}
-			});
+			GuiLabelExt l = new GuiLabelExt(fontRendererObj, i, 82 + guiLeft, 38 + i * 18 + guiTop, 60, 16, 0);
+			l.addLine(tiles.get(i));
+			labelList.add(l);
 		}
-		buttonList.addAll(buttons);
 
 	}
 
 	@Override
 	protected void actionPerformed(GuiButton button) throws IOException {
-		if (button.id < 8)
-			PacketHandler.INSTANCE.sendToServer(new MessageButton(button.id));
+			PacketHandler.INSTANCE.sendToServer(new MessageButton(button.id, 0, BlockPos.ORIGIN));
 	}
 
 	@Override
@@ -122,4 +121,19 @@ public class GuiPortal extends GuiContainer {
 		}
 	}
 
+	@Override
+	protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+		super.mouseClicked(mouseX, mouseY, mouseButton);
+		for (GuiLabel label : labelList) {
+			if (((GuiLabelExt) label).isMouseOver()) {
+				TileController target = PortalData.get(tile.getWorld()).getTile(((GuiLabelExt) label).labels.get(0));
+				tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
+				PacketHandler.INSTANCE.sendToServer(new MessageButton(1000, target.getWorld().provider.getDimension(), target.getPos()));
+			}
+		}
+	}
+	
+	void displayUpgrade(){
+		mc.displayGuiScreen(new GuiUpgrade(this));
+	}
 }

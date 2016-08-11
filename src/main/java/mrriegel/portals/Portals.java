@@ -4,6 +4,7 @@ import mrriegel.portals.proxy.CommonProxy;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TileFrame;
 import mrriegel.portals.tile.TilePortaal;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
@@ -21,6 +22,9 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
+import net.minecraftforge.fml.relauncher.Side;
 
 import org.apache.logging.log4j.Logger;
 
@@ -50,35 +54,33 @@ public class Portals {
 	}
 
 	@EventHandler
-	public void postInit(FMLPostInitializationEvent event) throws IllegalArgumentException, IllegalAccessException {
+	public void postInit(FMLPostInitializationEvent event){
 		proxy.postInit(event);
-		System.out.println("zip");
-		// Field field = BlockColors.class.getFields()[0];
-		// field.setAccessible(true);
-		// Object v=field.get(Minecraft.getMinecraft().getBlockColors());
-		// System.out.println(v);
 	}
 
 	@SubscribeEvent
 	public void x(PlayerInteractEvent.RightClickBlock e) {
 		if (!e.getWorld().isRemote && e.getEntityPlayer().getHeldItemMainhand() != null && e.getEntityPlayer().getHeldItemMainhand().getItem() == Items.STICK) {
-			FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(-1);
-//			System.out.println(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(-1).getBlockState(BlockPos.ORIGIN.west(400)).getBlock());
-			if (e.getWorld().getTileEntity(e.getPos()) instanceof TilePortaal && ((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController() != null) {
-				BlockPos pp = ((TileController) e.getWorld().getTileEntity(((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController())).getSelfLanding();
-				e.getEntityPlayer().setPositionAndUpdate(pp.getX() + .5, pp.getY() + .05, pp.getZ() + .5);
-				System.out.println("aber");
-			}
+			// System.out.println(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(-1).getBlockState(BlockPos.ORIGIN.west(400)).getBlock());
+//			if (e.getWorld().getTileEntity(e.getPos()) instanceof TilePortaal && ((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController() != null) {
+//				BlockPos pp = ((TileController) e.getWorld().getTileEntity(((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController())).getSelfLanding();
+//				e.getEntityPlayer().setPositionAndUpdate(pp.getX() + .5, pp.getY() + .05, pp.getZ() + .5);
+//				System.out.println("aber");
+//			}
 			// ((TileController)e.getWorld().getTileEntity(e.getPos())).scanFrame();
 			// e.getWorld().setBlockState(e.getPos().offset(e.getFace()),
 			// ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS,
 			// e.getFace().getAxis()));
 		}
 	}
+
 	@SubscribeEvent
-	public void u(LivingUpdateEvent e){
-		if(!e.getEntityLiving().worldObj.isRemote&&e.getEntityLiving() instanceof EntityPlayer){
-//			System.out.println("hoh: "+e.getEntityLiving().motionY);
+	public void u(LivingUpdateEvent e) {
+		if (!e.getEntityLiving().worldObj.isRemote&&e.getEntityLiving() instanceof EntityPlayer) {
+			if (e.getEntityLiving().getEntityData().getInteger("untilPort") > 0) {
+				e.getEntityLiving().getEntityData().setInteger("untilPort", e.getEntityLiving().getEntityData().getInteger("untilPort") - 1);
+			}
+//			System.out.println("hoh: "+e.getEntityLiving().getEntityData().getInteger("untilPort"));
 		}
 	}
 

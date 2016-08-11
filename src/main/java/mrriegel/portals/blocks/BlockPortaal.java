@@ -179,9 +179,20 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 		// if(!worldIn.isRemote)
 		// entityIn.setPositionAndUpdate(pos.getX()+4, pos.getY()+4,
 		// pos.getZ()+4);
-		if (!entityIn.isRiding() && !entityIn.isBeingRidden() && entityIn.isNonBoss() && entityIn.isEntityAlive())
-			entityIn.getEntityData().setBoolean("inPortaal", true);
+		// System.out.println(entityIn);
+		if (!worldIn.isRemote && !entityIn.isRiding() && !entityIn.isBeingRidden() && entityIn.isNonBoss() && entityIn.isEntityAlive()) {
+			if (worldIn.getTileEntity(pos) instanceof TilePortaal && ((TilePortaal) worldIn.getTileEntity(pos)).getController() != null && worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) instanceof TileController) {
+				TileController tile = (TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController());
+				if (tile.getTarget() != null) {
+					if (entityIn.getEntityData().getInteger("untilPort") <= 0) {
+						tile.teleport(entityIn);
+					}
+					entityIn.getEntityData().setInteger("untilPort", 10);
+				}
+			}
+			// entityIn.getEntityData().setBoolean("inPortaal", true);
 
+		}
 	}
 
 	@Override

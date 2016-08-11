@@ -56,8 +56,8 @@ public class MessageButton implements IMessage {
 						if (message.id == 1000) {
 							tile.setTarget(new GlobalBlockPos(message.pos, message.dim));
 						} else {
-							if(tile.getTarget()!=null)
-								tile.teleport(ctx.getServerHandler().playerEntity);
+//							if(tile.getTarget()!=null)
+//								tile.teleport(ctx.getServerHandler().playerEntity);
 							Upgrade upgrade = Upgrade.values()[tile.getStacks()[message.id].getItemDamage()];
 							System.out.println(upgrade);
 						}

@@ -5,6 +5,8 @@ import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TileFrame;
 import mrriegel.portals.tile.TilePortaal;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
@@ -22,6 +24,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -54,7 +57,7 @@ public class Portals {
 	}
 
 	@EventHandler
-	public void postInit(FMLPostInitializationEvent event){
+	public void postInit(FMLPostInitializationEvent event) {
 		proxy.postInit(event);
 	}
 
@@ -62,11 +65,17 @@ public class Portals {
 	public void x(PlayerInteractEvent.RightClickBlock e) {
 		if (!e.getWorld().isRemote && e.getEntityPlayer().getHeldItemMainhand() != null && e.getEntityPlayer().getHeldItemMainhand().getItem() == Items.STICK) {
 			// System.out.println(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(-1).getBlockState(BlockPos.ORIGIN.west(400)).getBlock());
-//			if (e.getWorld().getTileEntity(e.getPos()) instanceof TilePortaal && ((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController() != null) {
-//				BlockPos pp = ((TileController) e.getWorld().getTileEntity(((TilePortaal) e.getWorld().getTileEntity(e.getPos())).getController())).getSelfLanding();
-//				e.getEntityPlayer().setPositionAndUpdate(pp.getX() + .5, pp.getY() + .05, pp.getZ() + .5);
-//				System.out.println("aber");
-//			}
+			// if (e.getWorld().getTileEntity(e.getPos()) instanceof TilePortaal
+			// && ((TilePortaal)
+			// e.getWorld().getTileEntity(e.getPos())).getController() != null)
+			// {
+			// BlockPos pp = ((TileController)
+			// e.getWorld().getTileEntity(((TilePortaal)
+			// e.getWorld().getTileEntity(e.getPos())).getController())).getSelfLanding();
+			// e.getEntityPlayer().setPositionAndUpdate(pp.getX() + .5,
+			// pp.getY() + .05, pp.getZ() + .5);
+			// System.out.println("aber");
+			// }
 			// ((TileController)e.getWorld().getTileEntity(e.getPos())).scanFrame();
 			// e.getWorld().setBlockState(e.getPos().offset(e.getFace()),
 			// ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS,
@@ -74,13 +83,26 @@ public class Portals {
 		}
 	}
 
-	@SubscribeEvent
+//	@SubscribeEvent
 	public void u(LivingUpdateEvent e) {
-		if (!e.getEntityLiving().worldObj.isRemote&&e.getEntityLiving() instanceof EntityPlayer) {
+		if (!e.getEntityLiving().worldObj.isRemote) {
 			if (e.getEntityLiving().getEntityData().getInteger("untilPort") > 0) {
 				e.getEntityLiving().getEntityData().setInteger("untilPort", e.getEntityLiving().getEntityData().getInteger("untilPort") - 1);
 			}
-//			System.out.println("hoh: "+e.getEntityLiving().getEntityData().getInteger("untilPort"));
+			// System.out.println("hoh: "+e.getEntityLiving().getEntityData().getInteger("untilPort"));
+		}
+	}
+
+	@SubscribeEvent
+	public void tick(WorldTickEvent event) {
+		if (!event.world.isRemote && event.phase == Phase.START) {
+			for (Entity e : event.world.loadedEntityList) {
+				if (e instanceof EntityLivingBase || e instanceof EntityItem)
+					if (e.getEntityData().getInteger("untilPort") > 0) {
+						e.getEntityData().setInteger("untilPort", e.getEntityData().getInteger("untilPort") - 1);
+					}
+				// System.out.println("hoh: "+e.getEntityLiving().getEntityData().getInteger("untilPort"));
+			}
 		}
 	}
 

@@ -1,6 +1,7 @@
 package mrriegel.portals;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -44,9 +45,12 @@ public class PortalData extends WorldSavedData {
 			storage.setData(DATA_NAME, instance);
 		}
 		instance.valids.removeAll(Collections.singleton(null));
-		for (GlobalBlockPos p : instance.valids) {
-			if (p.pos == null || !(p.getTile() instanceof TileController))
-				instance.remove(p);
+		Iterator<GlobalBlockPos> it = instance.valids.iterator();
+		while (it.hasNext()) {
+			GlobalBlockPos p = it.next();
+			if (p.pos == null /** || !(p.getTile() instanceof TileController) */
+			)
+				it.remove();
 		}
 		return instance;
 	}
@@ -68,12 +72,12 @@ public class PortalData extends WorldSavedData {
 		}
 		return valids.contains(new GlobalBlockPos(pos, world));
 	}
-	
-	public List<String> getNames(){
-		List<String> lis=Lists.newArrayList();
+
+	public List<String> getNames() {
+		List<String> lis = Lists.newArrayList();
 		for (GlobalBlockPos p : valids) {
 			if (validPos(p.getWorld(), p.getPos()))
-				lis.add(((TileController)p.getTile()).getName());
+				lis.add(((TileController) p.getTile()).getName());
 		}
 		return lis;
 	}

@@ -19,6 +19,8 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.color.IBlockColor;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -45,7 +47,7 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 		setRegistryName("portaal");
 		setUnlocalizedName(getRegistryName().toString());
 		setBlockUnbreakable();
-		setResistance(600000F);
+		// setResistance(600000F);
 	}
 
 	@Override
@@ -176,27 +178,17 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 
 	@Override
 	public void onEntityCollidedWithBlock(World worldIn, BlockPos pos, IBlockState state, Entity entityIn) {
-		// if(!worldIn.isRemote)
-		// entityIn.setPositionAndUpdate(pos.getX()+4, pos.getY()+4,
-		// pos.getZ()+4);
-		// System.out.println(entityIn);
-		if (!worldIn.isRemote && !entityIn.isRiding() && !entityIn.isBeingRidden() && entityIn.isNonBoss() && entityIn.isEntityAlive()) {
+		if (!worldIn.isRemote && !entityIn.isRiding() && !entityIn.isBeingRidden() && entityIn.isNonBoss() && entityIn.isEntityAlive() && (entityIn instanceof EntityLivingBase || entityIn instanceof EntityItem)) {
 			if (worldIn.getTileEntity(pos) instanceof TilePortaal && ((TilePortaal) worldIn.getTileEntity(pos)).getController() != null && worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) instanceof TileController) {
 				TileController tile = (TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController());
 				if (tile.getTarget() != null) {
 					if (entityIn.getEntityData().getInteger("untilPort") <= 0) {
 						tile.teleport(entityIn);
 					}
-					entityIn.getEntityData().setInteger("untilPort", 10);
+					entityIn.getEntityData().setInteger("untilPort", 6);
 				}
 			}
-			// entityIn.getEntityData().setBoolean("inPortaal", true);
-
 		}
-	}
-
-	@Override
-	public void updateTick(World worldIn, BlockPos pos, IBlockState state, Random rand) {
 	}
 
 	@Override

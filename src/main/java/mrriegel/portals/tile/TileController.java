@@ -28,6 +28,7 @@ import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.Teleporter;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 
@@ -144,6 +145,8 @@ public class TileController extends TileBase implements IPortalFrame {
 	}
 
 	private boolean isPortalActive(GlobalBlockPos pos) {
+		if (pos == null)
+			return false;
 		boolean valid = PortalData.get(pos.getWorld()).validPos(pos.getWorld(), pos.getPos());
 		if (!valid)
 			return false;
@@ -334,19 +337,23 @@ public class TileController extends TileBase implements IPortalFrame {
 		TileController tar = (TileController) target.getTile();
 		if (tar == null || tar.selfLanding == null)
 			return;
+		int oldDim = entity.worldObj.provider.getDimension();
+		float yaw = entity.rotationYaw;
 		Vec3d before = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
+		Teleporter tele = new PortalTeleporter((WorldServer) target.getWorld(), tar.selfLanding);
 		if (entity.worldObj.provider.getDimension() == target.getDimension()) {
 			entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() + .5);
 		} else {
-			System.out.println("bef: " + entity.worldObj.provider.getDimension());
 			if (entity instanceof EntityPlayerMP) {
 				((EntityPlayerMP) entity).closeContainer();
-				worldObj.getMinecraftServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP) entity, target.getDimension(), new PortalTeleporter((WorldServer) target.getWorld(), tar.selfLanding));
+				worldObj.getMinecraftServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP) entity, target.getDimension(), tele);
 			} else
-				worldObj.getMinecraftServer().getPlayerList().transferEntityToWorld(entity, entity.worldObj.provider.getDimension(), (WorldServer) entity.worldObj, (WorldServer) target.getWorld(), new PortalTeleporter((WorldServer) target.getWorld(), tar.selfLanding));
-			// target.getWorld().spawnEntityInWorld(entity);
-			// target.getWorld().updateEntityWithOptionalForce(entity, false);
-			System.out.println("aft: " + entity.worldObj.provider.getDimension());
+				worldObj.getMinecraftServer().getPlayerList().transferEntityToWorld(entity, entity.worldObj.provider.getDimension(), (WorldServer) entity.worldObj, (WorldServer) target.getWorld(), tele);
+			entity.setPositionAndUpdate(tar.selfLanding.getX() + .5, tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5);
+			if (oldDim == 1) {
+				target.getWorld().spawnEntityInWorld(entity);
+				target.getWorld().updateEntityWithOptionalForce(entity, false);
+			}
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			entity.setRotationYawHead(tar.looking.getHorizontalAngle());

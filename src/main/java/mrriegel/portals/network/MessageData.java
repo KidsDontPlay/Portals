@@ -35,13 +35,11 @@ public class MessageData implements IMessage {
 	public void fromBytes(ByteBuf buf) {
 		data = new Gson().fromJson(ByteBufUtils.readUTF8String(buf), new TypeToken<Set<GlobalBlockPos>>() {
 		}.getType());
-		System.out.println("read:");
 	}
 
 	@Override
 	public void toBytes(ByteBuf buf) {
 		ByteBufUtils.writeUTF8String(buf, new Gson().toJson(data));
-		System.out.println("write:");
 	}
 
 	public static class Handler implements IMessageHandler<MessageData, IMessage> {

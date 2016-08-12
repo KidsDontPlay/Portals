@@ -58,10 +58,13 @@ public class GuiPortal extends GuiContainer {
 		}
 		name.drawTextBox();
 		for (GuiLabel label : labelList) {
-			if (((GuiLabelExt) label).isMouseOver())
+			if (((GuiLabelExt) label).isMouseOver()) {
 				((GuiLabelExt) label).setTextColor(0xfff0);
-			else
+				((GuiLabelExt) label).setLabelBgEnabled(true);
+			} else {
 				((GuiLabelExt) label).setTextColor(0xffffff);
+				((GuiLabelExt) label).setLabelBgEnabled(true);
+			}
 		}
 	}
 
@@ -91,6 +94,10 @@ public class GuiPortal extends GuiContainer {
 		for (int i = 0; i < Math.min(4, tiles.size()); i++) {
 			GuiLabelExt l = new GuiLabelExt(fontRendererObj, i, 82 + guiLeft, 38 + i * 18 + guiTop, 60, 16, 0);
 			l.addLine(tiles.get(i));
+			l.setBorder(2);
+//			l.setBackColor(0xff00cc);
+//			l.setBrColor(0x00ffcc);
+//			l.setUlColor(0xccff00);
 			labelList.add(l);
 		}
 
@@ -98,7 +105,7 @@ public class GuiPortal extends GuiContainer {
 
 	@Override
 	protected void actionPerformed(GuiButton button) throws IOException {
-			PacketHandler.INSTANCE.sendToServer(new MessageButton(button.id, 0, BlockPos.ORIGIN));
+		PacketHandler.INSTANCE.sendToServer(new MessageButton(button.id, 0, BlockPos.ORIGIN));
 	}
 
 	@Override
@@ -132,8 +139,8 @@ public class GuiPortal extends GuiContainer {
 			}
 		}
 	}
-	
-	void displayUpgrade(){
+
+	void displayUpgrade() {
 		mc.displayGuiScreen(new GuiUpgrade(this));
 	}
 }

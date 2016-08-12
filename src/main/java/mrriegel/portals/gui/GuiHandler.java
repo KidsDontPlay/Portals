@@ -3,6 +3,7 @@ package mrriegel.portals.gui;
 import mrriegel.portals.PortalData;
 import mrriegel.portals.network.MessageData;
 import mrriegel.portals.network.PacketHandler;
+import mrriegel.portals.tile.TileBase;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
@@ -19,6 +20,8 @@ public class GuiHandler implements IGuiHandler {
 	public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
 		if (player instanceof EntityPlayerMP)
 			PacketHandler.INSTANCE.sendTo(new MessageData(PortalData.get(world).valids), (EntityPlayerMP) player);
+		if (world.getTileEntity(new BlockPos(x, y, z)) instanceof TileBase)
+			((TileBase) world.getTileEntity(new BlockPos(x, y, z))).sync();
 		if (ID == PORTAL) {
 			return new ContainerPortal((TileController) world.getTileEntity(new BlockPos(x, y, z)), player.inventory);
 		}

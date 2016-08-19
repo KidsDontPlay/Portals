@@ -21,6 +21,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.network.play.server.SPacketEntityTeleport;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
@@ -349,6 +350,7 @@ public class TileController extends TileBase implements IPortalFrame {
 				worldObj.getMinecraftServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP) entity, target.getDimension(), tele);
 			} else
 				worldObj.getMinecraftServer().getPlayerList().transferEntityToWorld(entity, entity.worldObj.provider.getDimension(), (WorldServer) entity.worldObj, (WorldServer) target.getWorld(), tele);
+//			entity.setLocationAndAngles(tar.selfLanding.getX() + .5, tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5, 0, 0);
 			entity.setPositionAndUpdate(tar.selfLanding.getX() + .5, tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5);
 			if (oldDim == 1) {
 				target.getWorld().spawnEntityInWorld(entity);
@@ -356,7 +358,10 @@ public class TileController extends TileBase implements IPortalFrame {
 			}
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
-			entity.setRotationYawHead(tar.looking.getHorizontalAngle());
+			System.out.println("vor: "+entity.rotationYaw);
+			entity.rotationYaw=tar.looking.getHorizontalAngle();
+//			entity.setRotationYawHead(tar.looking.getHorizontalAngle());
+			System.out.println("nach: "+entity.rotationYaw);
 		}
 		if (tar.getUpgrades().contains(Upgrade.MOTION)) {
 			entity.motionX = before.xCoord;
@@ -369,6 +374,8 @@ public class TileController extends TileBase implements IPortalFrame {
 		}
 		if (entity instanceof EntityPlayerMP)
 			((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity));
+		if (entity instanceof EntityPlayerMP)
+			((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityTeleport(entity));
 
 	}
 
@@ -539,6 +546,14 @@ public class TileController extends TileBase implements IPortalFrame {
 
 	public void setColorParticle(int colorParticle) {
 		this.colorParticle = colorParticle;
+	}
+
+	public EnumFacing getLooking() {
+		return looking;
+	}
+
+	public void setLooking(EnumFacing looking) {
+		this.looking = looking;
 	}
 
 	private static class PortalException extends RuntimeException {

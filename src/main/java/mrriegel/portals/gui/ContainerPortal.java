@@ -52,9 +52,8 @@ public class ContainerPortal extends Container {
 		for (int l = 0; l < 9; ++l) {
 			this.addSlotToContainer(new Slot(invPlayer, l, 8 + l * 18, 214));
 		}
-		
 
-		System.out.println(tile.getTarget());
+//		System.out.println(tile.getTarget());
 	}
 
 	@Override
@@ -74,13 +73,13 @@ public class ContainerPortal extends Container {
 			tile.getStacks()[i] = tmp.getStackInSlot(i);
 		}
 	}
-	
+
 	@Override
 	public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player) {
 		refresh();
 		return super.slotClick(slotId, dragType, clickTypeIn, player);
 	}
-	
+
 	@Override
 	public ItemStack transferStackInSlot(EntityPlayer playerIn, int index) {
 		return null;

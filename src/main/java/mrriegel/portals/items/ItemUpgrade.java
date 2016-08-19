@@ -2,6 +2,10 @@ package mrriegel.portals.items;
 
 import java.util.List;
 
+import mrriegel.portals.gui.GuiPortal;
+import mrriegel.portals.gui.GuiUpgrade;
+import mrriegel.portals.gui.GuiUpgradeDirection;
+import mrriegel.portals.tile.TileController;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -15,6 +19,28 @@ public class ItemUpgrade extends Item {
 
 		private Upgrade(boolean hasButton) {
 			this.hasButton = hasButton;
+		}
+		
+		public GuiUpgrade getGUI(GuiPortal parent, TileController tile){
+			switch (this) {
+			case CAMOUFLAGE:
+				break;
+			case DIRECTION:
+				return new GuiUpgradeDirection(parent, tile, this);
+			case ENERGY:
+				break;
+			case FLUID:
+				break;
+			case ITEM:
+				break;
+			case MOTION:
+				break;
+			case PARTICLE:
+				break;
+			case REDSTONE:
+				break;
+			}
+			return null;
 		}
 	}
 

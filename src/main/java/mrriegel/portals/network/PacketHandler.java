@@ -13,6 +13,7 @@ public class PacketHandler {
 		INSTANCE.registerMessage(MessageName.Handler.class, MessageName.class, id++, Side.SERVER);
 		INSTANCE.registerMessage(MessageButton.Handler.class, MessageButton.class, id++, Side.SERVER);
 		INSTANCE.registerMessage(MessageData.Handler.class, MessageData.class, id++, Side.CLIENT);
+		INSTANCE.registerMessage(MessageUpgrade.Handler.class, MessageUpgrade.class, id++, Side.SERVER);
 
 	}
 }

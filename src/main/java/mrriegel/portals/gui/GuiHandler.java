@@ -33,6 +33,8 @@ public class GuiHandler implements IGuiHandler {
 		if (ID == PORTAL) {
 			return new GuiPortal(new ContainerPortal((TileController) world.getTileEntity(new BlockPos(x, y, z)), player.inventory));
 		}
+//		if (Minecraft.getMinecraft().currentScreen instanceof GuiPortal)
+//			return new GuiUpgrade((GuiPortal) Minecraft.getMinecraft().currentScreen);
 		return null;
 	}
 

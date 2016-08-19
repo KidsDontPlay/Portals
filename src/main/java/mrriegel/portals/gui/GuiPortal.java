@@ -20,9 +20,11 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
+import org.apache.commons.lang3.text.WordUtils;
 import org.lwjgl.input.Keyboard;
 
 import com.google.common.collect.Lists;
@@ -53,7 +55,7 @@ public class GuiPortal extends GuiContainer {
 			} else if (Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {
 				buttonList.get(k).enabled = true;
 				buttonList.get(k).visible = true;
-				buttonList.get(k).displayString = Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name();
+				buttonList.get(k).displayString = WordUtils.capitalize(Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase());
 			}
 		}
 		name.drawTextBox();
@@ -95,9 +97,9 @@ public class GuiPortal extends GuiContainer {
 			GuiLabelExt l = new GuiLabelExt(fontRendererObj, i, 82 + guiLeft, 38 + i * 18 + guiTop, 60, 16, 0);
 			l.addLine(tiles.get(i));
 			l.setBorder(2);
-//			l.setBackColor(0xff00cc);
-//			l.setBrColor(0x00ffcc);
-//			l.setUlColor(0xccff00);
+			// l.setBackColor(0xff00cc);
+			// l.setBrColor(0x00ffcc);
+			// l.setUlColor(0xccff00);
 			labelList.add(l);
 		}
 
@@ -105,6 +107,11 @@ public class GuiPortal extends GuiContainer {
 
 	@Override
 	protected void actionPerformed(GuiButton button) throws IOException {
+		if (button.id < 8) {
+			GuiUpgrade gui = Upgrade.values()[((ContainerPortal) inventorySlots).tmp.getStackInSlot(button.id).getItemDamage()].getGUI(this, tile);
+			if (gui != null)
+				mc.displayGuiScreen(gui);
+		}
 		PacketHandler.INSTANCE.sendToServer(new MessageButton(button.id, 0, BlockPos.ORIGIN));
 	}
 
@@ -138,9 +145,5 @@ public class GuiPortal extends GuiContainer {
 				PacketHandler.INSTANCE.sendToServer(new MessageButton(1000, target.getWorld().provider.getDimension(), target.getPos()));
 			}
 		}
-	}
-
-	void displayUpgrade() {
-		mc.displayGuiScreen(new GuiUpgrade(this));
 	}
 }

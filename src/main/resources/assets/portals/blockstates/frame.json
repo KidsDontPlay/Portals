@@ -4,7 +4,7 @@
         "textures":{
             "all":"portals:blocks/frame"
         },
-        "model":"cube_all"
+        "model":"portals:frame"
     },
     "variants":{
         "normal":[{

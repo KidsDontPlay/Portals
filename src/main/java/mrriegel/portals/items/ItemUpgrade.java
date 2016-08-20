@@ -6,6 +6,7 @@ import mrriegel.portals.gui.GuiPortal;
 import mrriegel.portals.gui.GuiUpgrade;
 import mrriegel.portals.gui.GuiUpgradeColor;
 import mrriegel.portals.gui.GuiUpgradeDirection;
+import mrriegel.portals.gui.GuiUpgradeParticle;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
@@ -14,7 +15,7 @@ import net.minecraft.item.ItemStack;
 public class ItemUpgrade extends Item {
 
 	public enum Upgrade {
-		COLOR(true), DIRECTION(true), /* MOTION(false), */PARTICLE(true), REDSTONE(true), ITEM(true), FLUID(true), ENERGY(true);
+		COLOR(true), DIRECTION(true), PARTICLE(true);
 
 		public boolean hasButton;
 
@@ -28,18 +29,8 @@ public class ItemUpgrade extends Item {
 				return new GuiUpgradeColor(parent, tile, this);
 			case DIRECTION:
 				return new GuiUpgradeDirection(parent, tile, this);
-			case ENERGY:
-				break;
-			case FLUID:
-				break;
-			case ITEM:
-				break;
-			// case MOTION:
-			// break;
 			case PARTICLE:
-				break;
-			case REDSTONE:
-				break;
+				return new GuiUpgradeParticle(parent, tile, this);
 			}
 			return null;
 		}

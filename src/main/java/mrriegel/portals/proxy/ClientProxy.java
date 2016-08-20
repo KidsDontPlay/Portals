@@ -1,6 +1,7 @@
 package mrriegel.portals.proxy;
 
 import mrriegel.portals.init.ModBlocks;
+import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.IPortalFrame;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TilePortaal;
@@ -61,17 +62,18 @@ public class ClientProxy extends CommonProxy {
 		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(new IBlockColor() {
 			@Override
 			public int colorMultiplier(IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) {
-				if (worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) == null)
-					return 0;
+				if (worldIn == null || pos == null || ((TilePortaal) worldIn.getTileEntity(pos)).getController() == null || worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) == null || !((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getUpgrades().contains(Upgrade.COLOR))
+					return 0xffffff;
 				return ((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getColorPortal();
 			}
 		}, ModBlocks.portaal);
-		IBlockColor frame=new IBlockColor() {
+		IBlockColor frame = new IBlockColor() {
 			@Override
 			public int colorMultiplier(IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) {
-				if (!(worldIn.getTileEntity(pos) instanceof IPortalFrame)||((IPortalFrame)worldIn.getTileEntity(pos)).getTileController()==null)
-					return 0;
-				return ((TileController)((IPortalFrame)worldIn.getTileEntity(pos)).getTileController()).getColorFrame();
+				if (worldIn == null || pos == null || !(worldIn.getTileEntity(pos) instanceof IPortalFrame) || ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController() == null || !((IPortalFrame) worldIn.getTileEntity(pos)).getTileController().getUpgrades().contains(Upgrade.COLOR)) {
+					return 0xffffff;
+				}
+				return ((TileController) ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController()).getColorFrame();
 			}
 		};
 		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(frame, ModBlocks.controller);

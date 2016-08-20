@@ -1,5 +1,6 @@
 package mrriegel.portals.gui;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -14,6 +15,7 @@ import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiLabel;
+import net.minecraft.client.gui.GuiListButton;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
@@ -21,6 +23,7 @@ import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.EnumFacing.Axis;
+import net.minecraft.util.StringUtils;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
@@ -35,6 +38,10 @@ public class GuiPortal extends GuiContainer {
 
 	private GuiTextField name;
 	private TileController tile;
+	private int visibleButtons, currentPos, maxPos;
+	private List<GuiButtonExt> targetButtons;
+	private List<String> targets;
+	private String currentTarget;
 
 	public GuiPortal(Container inventorySlotsIn) {
 		super(inventorySlotsIn);
@@ -74,6 +81,11 @@ public class GuiPortal extends GuiContainer {
 	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
 		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
 		fontRendererObj.drawString("Name:", 90, 7, 0);
+		fontRendererObj.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 90, 140, Color.DARK_GRAY.getRGB());
+		for (int i = 0; i < targetButtons.size(); i++) {
+			GuiButtonExt b = targetButtons.get(i);
+			b.displayString = targets.get(i + currentPos);
+		}
 	}
 
 	@Override
@@ -90,18 +102,19 @@ public class GuiPortal extends GuiContainer {
 		name.setTextColor(16777215);
 		name.setText(((ContainerPortal) inventorySlots).tile.getName());
 		name.setFocused(true);
-		List<String> tiles = Lists.newArrayList(PortalData.get(tile.getWorld()).getNames());
-		tiles.remove(tile.getName());
-		Collections.sort(tiles);
-		for (int i = 0; i < Math.min(4, tiles.size()); i++) {
-			GuiLabelExt l = new GuiLabelExt(fontRendererObj, i, 82 + guiLeft, 38 + i * 18 + guiTop, 60, 16, 0);
-			l.addLine(tiles.get(i));
-			l.setBorder(2);
-			// l.setBackColor(0xff00cc);
-			// l.setBrColor(0x00ffcc);
-			// l.setUlColor(0xccff00);
-			labelList.add(l);
+		targets = Lists.newArrayList(PortalData.get(tile.getWorld()).getNames());
+		targets.remove(tile.getName());
+		Collections.sort(targets);
+		visibleButtons = Math.min(5, targets.size());
+		targetButtons = Lists.newArrayList();
+		for (int i = 0; i < visibleButtons; i++) {
+			targetButtons.add(new GuiButtonExt(i + 1000, 92 + guiLeft, 38 + i * 18 + guiTop, 60, 16, ""));
 		}
+		buttonList.addAll(targetButtons);
+		maxPos = targets.size() - visibleButtons;
+		buttonList.add(new GuiButtonExt(2000, 153 + guiLeft, 38 + guiTop, 18, 12, "^"));
+		buttonList.add(new GuiButtonExt(2001, 153 + guiLeft, 114 + guiTop, 18, 12, "v"));
+		currentTarget = tile.getTarget() != null && ((TileController) tile.getTarget().getTile(tile.getWorld())) != null ? ((TileController) tile.getTarget().getTile(tile.getWorld())).getName() : "";
 
 	}
 
@@ -111,8 +124,21 @@ public class GuiPortal extends GuiContainer {
 			GuiUpgrade gui = Upgrade.values()[((ContainerPortal) inventorySlots).tmp.getStackInSlot(button.id).getItemDamage()].getGUI(this, tile);
 			if (gui != null)
 				mc.displayGuiScreen(gui);
+		} else if (button.id == 2000) {
+			if (currentPos > 0)
+				currentPos--;
+		} else if (button.id == 2001) {
+			if (currentPos < maxPos)
+				currentPos++;
+		} else {
+
+			PacketHandler.INSTANCE.sendToServer(new MessageButton(button.displayString));
+			TileController target = PortalData.get(tile.getWorld()).getTile(button.displayString);
+			if (target != null) {
+				tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
+				currentTarget = ((TileController) tile.getTarget().getTile(tile.getWorld())).getName();
+			}
 		}
-		PacketHandler.INSTANCE.sendToServer(new MessageButton(button.id, 0, BlockPos.ORIGIN));
 	}
 
 	@Override
@@ -135,15 +161,19 @@ public class GuiPortal extends GuiContainer {
 		}
 	}
 
-	@Override
-	protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-		super.mouseClicked(mouseX, mouseY, mouseButton);
-		for (GuiLabel label : labelList) {
-			if (((GuiLabelExt) label).isMouseOver()) {
-				TileController target = PortalData.get(tile.getWorld()).getTile(((GuiLabelExt) label).labels.get(0));
-				tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
-				PacketHandler.INSTANCE.sendToServer(new MessageButton(1000, target.getWorld().provider.getDimension(), target.getPos()));
-			}
-		}
-	}
+	// @Override
+	// protected void mouseClicked(int mouseX, int mouseY, int mouseButton)
+	// throws IOException {
+	// super.mouseClicked(mouseX, mouseY, mouseButton);
+	// for (GuiLabel label : labelList) {
+	// if (((GuiLabelExt) label).isMouseOver()) {
+	// TileController target =
+	// PortalData.get(tile.getWorld()).getTile(((GuiLabelExt)
+	// label).labels.get(0));
+	// tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
+	// PacketHandler.INSTANCE.sendToServer(new MessageButton(1000,
+	// target.getWorld().provider.getDimension(), target.getPos()));
+	// }
+	// }
+	// }
 }

@@ -21,7 +21,7 @@ public class GuiUpgradeDirection extends GuiUpgrade {
 	@Override
 	public void initGui() {
 		super.initGui();
-		buttonList.add(new GuiButton(0, guiLeft + 20, guiTop + 50, 60, 20, WordUtils.capitalize(tile.getLooking().getName2().toLowerCase())));
+		buttonList.add(new GuiButton(0, guiLeft + 20, guiTop + 45, 60, 20, WordUtils.capitalize(tile.getLooking().getName2().toLowerCase())));
 	}
 
 	@Override

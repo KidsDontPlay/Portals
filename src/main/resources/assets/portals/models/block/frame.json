@@ -4,9 +4,9 @@
         "particle": "portals:blocks/deck",
         "down": "portals:blocks/deck",
         "up": "portals:blocks/deck",
-        "north": "#all",
-        "east": "#all",
-        "south": "#all",
-        "west": "#all"
+        "north": "portals:blocks/side",
+        "east": "portals:blocks/side",
+        "south": "portals:blocks/side",
+        "west": "portals:blocks/side"
     }
 }

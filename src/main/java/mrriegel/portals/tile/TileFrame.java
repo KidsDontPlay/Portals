@@ -31,6 +31,8 @@ public class TileFrame extends TileBase implements IPortalFrame {
 	}
 
 	public BlockPos getController() {
+		if(controller!=null&& !(worldObj.getTileEntity(controller) instanceof TileController) )
+			controller=null;
 		return controller;
 	}
 
@@ -40,7 +42,7 @@ public class TileFrame extends TileBase implements IPortalFrame {
 
 	@Override
 	public TileController getTileController() {
-		return controller != null && worldObj.getTileEntity(controller) instanceof TileController ? (TileController) worldObj.getTileEntity(controller) : null;
+		return getController() != null && worldObj.getTileEntity(getController()) instanceof TileController ? (TileController) worldObj.getTileEntity(getController()) : null;
 	}
 
 }

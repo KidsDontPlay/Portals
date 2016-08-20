@@ -12,6 +12,8 @@ import mrriegel.portals.PortalTeleporter;
 import mrriegel.portals.blocks.BlockPortaal;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
+import mrriegel.portals.network.MessageData;
+import mrriegel.portals.network.PacketHandler;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
@@ -45,13 +47,11 @@ public class TileController extends TileBase implements IPortalFrame {
 
 	private Set<BlockPos> frames = Sets.newHashSet(), portals = Sets.newHashSet();
 	private ItemStack[] stacks = new ItemStack[8];
-	// private EnumFacing face;
-	// private int index;
 	private boolean privat, active, valid;
 	private String owner, name = RandomStringUtils.random(10, true, true);
 	private GlobalBlockPos target;
 	private BlockPos selfLanding;
-	private int colorPortal = 0xffffff, colorParticle = 0xffffff, colorFrame = 0xffffff;
+	private int colorPortal = 0x9500fe, colorParticle = 0x9500fe, colorFrame = 0x9500fe;
 	private EnumFacing looking = EnumFacing.NORTH;
 
 	public static int max = 300;
@@ -64,6 +64,7 @@ public class TileController extends TileBase implements IPortalFrame {
 			if (!valid && active)
 				deactivate();
 			portals = Sets.newHashSet(set);
+			// System.out.println("fac: "+faces.size());
 			if (!faces.isEmpty())
 				addFrames(faces);
 		}
@@ -74,7 +75,7 @@ public class TileController extends TileBase implements IPortalFrame {
 			PortalData.get(worldObj).remove(new GlobalBlockPos(pos, worldObj));
 			selfLanding = null;
 		}
-		markDirty();
+		sync();
 		return valid;
 	}
 
@@ -102,10 +103,13 @@ public class TileController extends TileBase implements IPortalFrame {
 		for (BlockPos p : portals) {
 			worldObj.setBlockState(p, ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, a));
 			((TilePortaal) worldObj.getTileEntity(p)).setController(this.pos);
-			worldObj.getTileEntity(p).markDirty();
+			((TilePortaal) worldObj.getTileEntity(p)).markDirty();
 		}
 		active = true;
-		markDirty();
+		sync();
+		for (BlockPos p : frames)
+			if (worldObj.getTileEntity(p) instanceof TileFrame)
+				((TileFrame) worldObj.getTileEntity(p)).sync();
 		return true;
 
 	}
@@ -115,12 +119,16 @@ public class TileController extends TileBase implements IPortalFrame {
 			if (worldObj.getBlockState(p).getBlock() == ModBlocks.portaal) {
 				worldObj.setBlockToAir(p);
 			}
-		for (BlockPos p : frames)
-			if (worldObj.getTileEntity(p) instanceof TileFrame) {
-				((TileFrame) worldObj.getTileEntity(p)).setController(null);
-			}
+		// for (BlockPos p : frames)
+		// if (worldObj.getTileEntity(p) instanceof TileFrame) {
+		// ((TileFrame) worldObj.getTileEntity(p)).setController(null);
+		// ((TileFrame) worldObj.getTileEntity(p)).sync();
+		// }
 		active = false;
-		markDirty();
+		sync();
+		for (BlockPos p : frames)
+			if (worldObj.getTileEntity(p) instanceof TileFrame)
+				((TileFrame) worldObj.getTileEntity(p)).sync();
 
 	}
 
@@ -136,8 +144,9 @@ public class TileController extends TileBase implements IPortalFrame {
 		}
 		if (selfs.isEmpty())
 			selfLanding = null;
-		else
+		else {
 			selfLanding = selfs.iterator().next();
+		}
 	}
 
 	boolean frameChanged(Set<BlockPos> set) {
@@ -149,18 +158,18 @@ public class TileController extends TileBase implements IPortalFrame {
 	private boolean isPortalActive(GlobalBlockPos pos) {
 		if (pos == null)
 			return false;
-		boolean valid = PortalData.get(pos.getWorld()).validPos(pos.getWorld(), pos.getPos());
+		boolean valid = PortalData.get(pos.getWorld(worldObj)).validPos(pos.getWorld(worldObj), pos.getPos());
 		if (!valid)
 			return false;
-		if (pos.getTile() instanceof TileController && ((TileController) pos.getTile()).isActive() // &&
-																									// ((TileController)
-																									// pos.getTile()).getTarget().equals(new
-																									// GlobalBlockPos(this.pos,
-																									// worldObj))
+		if (pos.getTile(worldObj) instanceof TileController && ((TileController) pos.getTile(worldObj)).isActive() // &&
+		// ((TileController)
+		// pos.getTile()).getTarget().equals(new
+		// GlobalBlockPos(this.pos,
+		// worldObj))
 		)
 			return true;
 		for (EnumFacing face : EnumFacing.VALUES) {
-			if (pos.getWorld().getBlockState(pos.getPos().offset(face)).getBlock() == ModBlocks.portaal)
+			if (pos.getWorld(worldObj).getBlockState(pos.getPos().offset(face)).getBlock() == ModBlocks.portaal)
 				return true;
 		}
 		return false;
@@ -204,7 +213,7 @@ public class TileController extends TileBase implements IPortalFrame {
 				if (worldObj.getTileEntity(pp) instanceof TileFrame) {
 					frames.add(pp);
 					((TileFrame) worldObj.getTileEntity(pp)).setController(this.pos);
-					worldObj.getTileEntity(pp).markDirty();
+					((TileFrame) worldObj.getTileEntity(pp)).sync();
 				}
 			}
 		}
@@ -336,13 +345,12 @@ public class TileController extends TileBase implements IPortalFrame {
 	public void teleport(Entity entity) {
 		if (entity == null || !valid || !active || !isPortalActive(target) || entity.worldObj.isRemote)
 			return;
-		TileController tar = (TileController) target.getTile();
+		TileController tar = (TileController) target.getTile(worldObj);
 		if (tar == null || tar.selfLanding == null)
 			return;
 		int oldDim = entity.worldObj.provider.getDimension();
-		Vec3d before = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
-		System.out.println("bef: " + before);
-		Teleporter tele = new PortalTeleporter((WorldServer) target.getWorld(), tar.selfLanding);
+//		Vec3d before = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
+		Teleporter tele = new PortalTeleporter((WorldServer) target.getWorld(worldObj), tar.selfLanding);
 		if (entity.worldObj.provider.getDimension() == target.getDimension()) {
 			entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() + .5);
 		} else {
@@ -350,13 +358,14 @@ public class TileController extends TileBase implements IPortalFrame {
 				((EntityPlayerMP) entity).closeContainer();
 				worldObj.getMinecraftServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP) entity, target.getDimension(), tele);
 			} else
-				worldObj.getMinecraftServer().getPlayerList().transferEntityToWorld(entity, entity.worldObj.provider.getDimension(), (WorldServer) entity.worldObj, (WorldServer) target.getWorld(), tele);
+				worldObj.getMinecraftServer().getPlayerList().transferEntityToWorld(entity, entity.worldObj.provider.getDimension(), (WorldServer) entity.worldObj, (WorldServer) target.getWorld(worldObj), tele);
 			// entity.setLocationAndAngles(tar.selfLanding.getX() + .5,
 			// tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5, 0, 0);
 			entity.setPositionAndUpdate(tar.selfLanding.getX() + .5, tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5);
+			entity.fallDistance = 0F;
 			if (oldDim == 1) {
-				target.getWorld().spawnEntityInWorld(entity);
-				target.getWorld().updateEntityWithOptionalForce(entity, false);
+				target.getWorld(worldObj).spawnEntityInWorld(entity);
+				target.getWorld(worldObj).updateEntityWithOptionalForce(entity, false);
 			}
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {

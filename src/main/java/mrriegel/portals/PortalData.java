@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.Set;
 
 import mrriegel.portals.init.ModBlocks;
+import mrriegel.portals.network.MessageData;
+import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -57,11 +61,15 @@ public class PortalData extends WorldSavedData {
 
 	public void add(GlobalBlockPos pos) {
 		valids.add(pos);
+		for (EntityPlayerMP p : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerList())
+			PacketHandler.INSTANCE.sendTo(new MessageData(valids), p);
 		markDirty();
 	}
 
 	public void remove(GlobalBlockPos pos) {
 		valids.remove(pos);
+		for (EntityPlayerMP p : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerList())
+			PacketHandler.INSTANCE.sendTo(new MessageData(valids), p);
 		markDirty();
 	}
 
@@ -76,24 +84,24 @@ public class PortalData extends WorldSavedData {
 	public List<String> getNames() {
 		List<String> lis = Lists.newArrayList();
 		for (GlobalBlockPos p : valids) {
-			if (validPos(p.getWorld(), p.getPos()))
-				lis.add(((TileController) p.getTile()).getName());
+			if (validPos(p.getWorld(null), p.getPos()))
+				lis.add(((TileController) p.getTile(null)).getName());
 		}
 		return lis;
 	}
 
 	public TileController getTile(String name) {
 		for (GlobalBlockPos p : valids) {
-			if (validPos(p.getWorld(), p.getPos()) && ((TileController) p.getTile()).getName().equals(name))
-				return (TileController) p.getTile();
+			if (validPos(p.getWorld(null), p.getPos()) && ((TileController) p.getTile(null)).getName().equals(name))
+				return (TileController) p.getTile(null);
 		}
 		return null;
 	}
 
 	public boolean nameOccupied(String name, GlobalBlockPos p) {
 		for (GlobalBlockPos pos : valids) {
-			if (pos.getTile() instanceof TileController && !pos.equals(p)) {
-				if (((TileController) pos.getTile()).getName().equals(name))
+			if (pos.getTile(null) instanceof TileController && !pos.equals(p)) {
+				if (((TileController) pos.getTile(null)).getName().equals(name))
 					return true;
 			}
 		}
@@ -180,12 +188,14 @@ public class PortalData extends WorldSavedData {
 			this.dimension = dimension;
 		}
 
-		public World getWorld() {
+		public World getWorld(World world) {
+			if (world != null && world.provider.getDimension() == dimension)
+				return world;
 			return FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(dimension);
 		}
 
-		public TileEntity getTile() {
-			return getWorld().getTileEntity(getPos());
+		public TileEntity getTile(World world) {
+			return getWorld(world).getTileEntity(getPos());
 		}
 
 		public void readFromNBT(NBTTagCompound compound) {

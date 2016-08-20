@@ -153,7 +153,8 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 		TileController tile = (TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController());
 		if(tile==null)
 			return;
-		worldIn.markBlockRangeForRenderUpdate(pos, pos);
+//		worldIn.markBlockRangeForRenderUpdate(pos, pos);
+//		System.out.println("tick");
 		if (tile.getUpgrades().contains(Upgrade.PARTICLE))
 			for (int i = 0; i < 4; ++i) {
 				double d0 = pos.getX() + rand.nextFloat();

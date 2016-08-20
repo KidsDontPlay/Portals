@@ -48,20 +48,12 @@ public class MessageUpgrade implements IMessage {
 					case COLOR:
 						tile.setColorPortal(message.nbt.getInteger("colorP"));
 						tile.setColorFrame(message.nbt.getInteger("colorF"));
-						tile.getWorld().getBlockState(tile.getPos()).getBlock().onNeighborChange(tile.getWorld(), tile.getPos(), tile.getPos());
 						break;
 					case DIRECTION:
 						tile.setLooking(tile.getLooking().rotateAround(Axis.Y));
 						break;
-					case ENERGY:
-						break;
-					case FLUID:
-						break;
-					case ITEM:
-						break;
 					case PARTICLE:
-						break;
-					case REDSTONE:
+						tile.setColorParticle(message.nbt.getInteger("color"));
 						break;
 					}
 					tile.sync();

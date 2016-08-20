@@ -5,6 +5,7 @@ import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.Portals;
 import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.tile.TileController;
+import mrriegel.portals.tile.TilePortaal;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
@@ -60,6 +61,12 @@ public class BlockController extends BlockContainer {
 
 	@Override
 	public void breakBlock(World worldIn, BlockPos pos, IBlockState state) {
+		if (worldIn.getTileEntity(pos) instanceof TileController) {
+			for (ItemStack stack : ((TileController) worldIn.getTileEntity(pos)).getStacks()) {
+				if (stack != null)
+					spawnAsEntity(worldIn, pos, stack);
+			}
+		}
 		super.breakBlock(worldIn, pos, state);
 		PortalData.get(worldIn).remove(new GlobalBlockPos(pos, worldIn));
 	}
@@ -71,7 +78,8 @@ public class BlockController extends BlockContainer {
 		} else {
 			TileEntity tileentity = worldIn.getTileEntity(pos);
 			if (tileentity instanceof TileController) {
-//				TileController tile = (TileController) worldIn.getTileEntity(pos);
+				// TileController tile = (TileController)
+				// worldIn.getTileEntity(pos);
 				playerIn.openGui(Portals.instance, GuiHandler.PORTAL, worldIn, pos.getX(), pos.getY(), pos.getZ());
 			}
 			return true;

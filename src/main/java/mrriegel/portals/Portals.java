@@ -1,5 +1,7 @@
 package mrriegel.portals;
 
+import java.util.Random;
+
 import mrriegel.portals.proxy.CommonProxy;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TileFrame;
@@ -10,7 +12,10 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
+import net.minecraft.network.play.server.SPacketEntity;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
+import net.minecraft.network.play.server.SPacketPlayerPosLook;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
@@ -30,6 +35,8 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
 import net.minecraftforge.fml.relauncher.Side;
 
 import org.apache.logging.log4j.Logger;
+
+import com.google.common.collect.Sets;
 
 @Mod(modid = Portals.MODID, name = Portals.MODNAME, version = Portals.VERSION)
 public class Portals {
@@ -64,6 +71,10 @@ public class Portals {
 	@SubscribeEvent
 	public void x(PlayerInteractEvent.RightClickBlock e) {
 		if (!e.getWorld().isRemote && e.getEntityPlayer().getHeldItemMainhand() != null && e.getEntityPlayer().getHeldItemMainhand().getItem() == Items.STICK) {
+			EntityPlayerMP player = (EntityPlayerMP) e.getEntityPlayer();
+			player.rotationYaw = EnumFacing.HORIZONTALS[new Random().nextInt(EnumFacing.HORIZONTALS.length)].getHorizontalAngle();
+			player.rotationPitch = 0f;
+			((EntityPlayerMP) player).connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.chasingPosZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			// System.out.println(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(-1).getBlockState(BlockPos.ORIGIN.west(400)).getBlock());
 			// if (e.getWorld().getTileEntity(e.getPos()) instanceof TilePortaal
 			// && ((TilePortaal)
@@ -83,8 +94,12 @@ public class Portals {
 		}
 	}
 
-//	@SubscribeEvent
+//	 @SubscribeEvent
 	public void u(LivingUpdateEvent e) {
+		if (e.getEntityLiving() instanceof EntityPlayer)
+			System.out.println("vor: " + e.getEntityLiving().motionX);
+		if (true)
+			return;
 		if (!e.getEntityLiving().worldObj.isRemote) {
 			if (e.getEntityLiving().getEntityData().getInteger("untilPort") > 0) {
 				e.getEntityLiving().getEntityData().setInteger("untilPort", e.getEntityLiving().getEntityData().getInteger("untilPort") - 1);

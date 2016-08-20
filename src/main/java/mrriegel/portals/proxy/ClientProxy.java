@@ -1,12 +1,9 @@
 package mrriegel.portals.proxy;
 
-import java.util.Map;
-
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.tile.IPortalFrame;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TilePortaal;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
@@ -16,7 +13,6 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.VertexBuffer;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
-import net.minecraft.client.renderer.block.statemap.IStateMapper;
 import net.minecraft.client.renderer.color.IBlockColor;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
@@ -29,15 +25,12 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.model.ModelLoader;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import org.lwjgl.opengl.GL11;
-
-import com.google.common.collect.Maps;
 
 public class ClientProxy extends CommonProxy {
 
@@ -73,6 +66,16 @@ public class ClientProxy extends CommonProxy {
 				return ((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getColorPortal();
 			}
 		}, ModBlocks.portaal);
+		IBlockColor frame=new IBlockColor() {
+			@Override
+			public int colorMultiplier(IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) {
+				if (!(worldIn.getTileEntity(pos) instanceof IPortalFrame)||((IPortalFrame)worldIn.getTileEntity(pos)).getTileController()==null)
+					return 0;
+				return ((TileController)((IPortalFrame)worldIn.getTileEntity(pos)).getTileController()).getColorFrame();
+			}
+		};
+		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(frame, ModBlocks.controller);
+		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(frame, ModBlocks.frame);
 	}
 
 	@SubscribeEvent

@@ -23,6 +23,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.play.server.SPacketEntityTeleport;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
+import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
@@ -50,7 +51,7 @@ public class TileController extends TileBase implements IPortalFrame {
 	private String owner, name = RandomStringUtils.random(10, true, true);
 	private GlobalBlockPos target;
 	private BlockPos selfLanding;
-	private int colorPortal = 0xffffff, colorParticle = 0xffffff;
+	private int colorPortal = 0xffffff, colorParticle = 0xffffff, colorFrame = 0xffffff;
 	private EnumFacing looking = EnumFacing.NORTH;
 
 	public static int max = 300;
@@ -339,8 +340,8 @@ public class TileController extends TileBase implements IPortalFrame {
 		if (tar == null || tar.selfLanding == null)
 			return;
 		int oldDim = entity.worldObj.provider.getDimension();
-		float yaw = entity.rotationYaw;
 		Vec3d before = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
+		System.out.println("bef: " + before);
 		Teleporter tele = new PortalTeleporter((WorldServer) target.getWorld(), tar.selfLanding);
 		if (entity.worldObj.provider.getDimension() == target.getDimension()) {
 			entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() + .5);
@@ -350,7 +351,8 @@ public class TileController extends TileBase implements IPortalFrame {
 				worldObj.getMinecraftServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP) entity, target.getDimension(), tele);
 			} else
 				worldObj.getMinecraftServer().getPlayerList().transferEntityToWorld(entity, entity.worldObj.provider.getDimension(), (WorldServer) entity.worldObj, (WorldServer) target.getWorld(), tele);
-//			entity.setLocationAndAngles(tar.selfLanding.getX() + .5, tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5, 0, 0);
+			// entity.setLocationAndAngles(tar.selfLanding.getX() + .5,
+			// tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5, 0, 0);
 			entity.setPositionAndUpdate(tar.selfLanding.getX() + .5, tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5);
 			if (oldDim == 1) {
 				target.getWorld().spawnEntityInWorld(entity);
@@ -358,24 +360,28 @@ public class TileController extends TileBase implements IPortalFrame {
 			}
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
-			System.out.println("vor: "+entity.rotationYaw);
-			entity.rotationYaw=tar.looking.getHorizontalAngle();
-//			entity.setRotationYawHead(tar.looking.getHorizontalAngle());
-			System.out.println("nach: "+entity.rotationYaw);
+			if (entity instanceof EntityPlayerMP) {
+				EntityPlayerMP player = (EntityPlayerMP) entity;
+				player.rotationYaw = tar.looking.getHorizontalAngle();
+				// player.rotationPitch = 0f;
+				((EntityPlayerMP) player).connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+			}
 		}
-		if (tar.getUpgrades().contains(Upgrade.MOTION)) {
-			entity.motionX = before.xCoord;
-			entity.motionY = before.yCoord;
-			entity.motionZ = before.zCoord;
-		} else {
-			entity.motionX = 0;
-			entity.motionY = 0;
-			entity.motionZ = 0;
-		}
-		if (entity instanceof EntityPlayerMP)
-			((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity));
-		if (entity instanceof EntityPlayerMP)
-			((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityTeleport(entity));
+		// if (tar.getUpgrades().contains(Upgrade.MOTION)) {
+		// entity.motionX = before.xCoord;
+		// entity.motionY = before.yCoord;
+		// entity.motionZ = before.zCoord;
+		// } else {
+		// entity.motionX = 0;
+		// entity.motionY = 0;
+		// entity.motionZ = 0;
+		// }
+		// if (entity instanceof EntityPlayerMP)
+		// ((EntityPlayerMP) entity).connection.netManager.sendPacket(new
+		// SPacketEntityVelocity(entity));
+		// if (entity instanceof EntityPlayerMP)
+		// ((EntityPlayerMP) entity).connection.netManager.sendPacket(new
+		// SPacketEntityTeleport(entity));
 
 	}
 
@@ -417,6 +423,7 @@ public class TileController extends TileBase implements IPortalFrame {
 		}
 		colorParticle = compound.getInteger("colorParticle");
 		colorPortal = compound.getInteger("colorPortal");
+		colorFrame = compound.getInteger("colorFrame");
 	}
 
 	@Override
@@ -448,6 +455,7 @@ public class TileController extends TileBase implements IPortalFrame {
 		compound.setTag("Items", nbttaglist);
 		compound.setInteger("colorParticle", colorParticle);
 		compound.setInteger("colorPortal", colorPortal);
+		compound.setInteger("colorFrame", colorFrame);
 
 		return super.writeToNBT(compound);
 	}
@@ -546,6 +554,14 @@ public class TileController extends TileBase implements IPortalFrame {
 
 	public void setColorParticle(int colorParticle) {
 		this.colorParticle = colorParticle;
+	}
+
+	public int getColorFrame() {
+		return colorFrame;
+	}
+
+	public void setColorFrame(int colorFrame) {
+		this.colorFrame = colorFrame;
 	}
 
 	public EnumFacing getLooking() {

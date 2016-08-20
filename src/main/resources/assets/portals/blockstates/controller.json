@@ -4,7 +4,7 @@
         "textures":{
             "all":"portals:blocks/controller"
         },
-        "model":"cube_all"
+        "model":"portals:controller"
     },
     "variants":{
         "normal":[{

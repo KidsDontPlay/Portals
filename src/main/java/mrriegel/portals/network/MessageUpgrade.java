@@ -5,6 +5,7 @@ import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.gui.ContainerPortal;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
+import net.minecraft.init.Blocks;
 import net.minecraft.inventory.Container;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing.Axis;
@@ -44,7 +45,10 @@ public class MessageUpgrade implements IMessage {
 				public void run() {
 					TileController tile = (TileController) ctx.getServerHandler().playerEntity.getServerWorld().getTileEntity(BlockPos.fromLong(message.nbt.getLong("pos")));
 					switch (Upgrade.values()[message.nbt.getInteger("id")]) {
-					case CAMOUFLAGE:
+					case COLOR:
+						tile.setColorPortal(message.nbt.getInteger("colorP"));
+						tile.setColorFrame(message.nbt.getInteger("colorF"));
+						tile.getWorld().getBlockState(tile.getPos()).getBlock().onNeighborChange(tile.getWorld(), tile.getPos(), tile.getPos());
 						break;
 					case DIRECTION:
 						tile.setLooking(tile.getLooking().rotateAround(Axis.Y));

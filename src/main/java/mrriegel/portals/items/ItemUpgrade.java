@@ -4,6 +4,7 @@ import java.util.List;
 
 import mrriegel.portals.gui.GuiPortal;
 import mrriegel.portals.gui.GuiUpgrade;
+import mrriegel.portals.gui.GuiUpgradeColor;
 import mrriegel.portals.gui.GuiUpgradeDirection;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.creativetab.CreativeTabs;
@@ -13,18 +14,18 @@ import net.minecraft.item.ItemStack;
 public class ItemUpgrade extends Item {
 
 	public enum Upgrade {
-		CAMOUFLAGE(true), DIRECTION(true), MOTION(false), PARTICLE(true), REDSTONE(true), ITEM(true), FLUID(true), ENERGY(true);
-		
+		COLOR(true), DIRECTION(true), /* MOTION(false), */PARTICLE(true), REDSTONE(true), ITEM(true), FLUID(true), ENERGY(true);
+
 		public boolean hasButton;
 
 		private Upgrade(boolean hasButton) {
 			this.hasButton = hasButton;
 		}
-		
-		public GuiUpgrade getGUI(GuiPortal parent, TileController tile){
+
+		public GuiUpgrade getGUI(GuiPortal parent, TileController tile) {
 			switch (this) {
-			case CAMOUFLAGE:
-				break;
+			case COLOR:
+				return new GuiUpgradeColor(parent, tile, this);
 			case DIRECTION:
 				return new GuiUpgradeDirection(parent, tile, this);
 			case ENERGY:
@@ -33,8 +34,8 @@ public class ItemUpgrade extends Item {
 				break;
 			case ITEM:
 				break;
-			case MOTION:
-				break;
+			// case MOTION:
+			// break;
 			case PARTICLE:
 				break;
 			case REDSTONE:

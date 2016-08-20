@@ -39,6 +39,7 @@ public class GuiUpgrade extends GuiScreen {
 	@Override
 	protected void keyTyped(char typedChar, int keyCode) throws IOException {
 		if (keyCode == Keyboard.KEY_ESCAPE && parent != null) {
+			onClosed();
 			Minecraft.getMinecraft().currentScreen = parent;
 		} else
 			super.keyTyped(typedChar, keyCode);
@@ -66,5 +67,7 @@ public class GuiUpgrade extends GuiScreen {
 		nbt.setLong("pos", tile.getPos().toLong());
 		return nbt;
 	}
+	
+	protected void onClosed(){};
 
 }

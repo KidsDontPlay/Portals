@@ -1,4 +1,4 @@
-package mrriegel.portals;
+package mrriegel.portals.util;
 
 import java.awt.Color;
 

@@ -1,9 +1,9 @@
 package mrriegel.portals.network;
 
 import io.netty.buffer.ByteBuf;
-import mrriegel.portals.PortalData;
-import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.tile.TileController;
+import mrriegel.portals.util.GlobalBlockPos;
+import mrriegel.portals.util.PortalData;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.ByteBufUtils;

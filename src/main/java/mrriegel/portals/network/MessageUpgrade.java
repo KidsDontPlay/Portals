@@ -1,12 +1,8 @@
 package mrriegel.portals.network;
 
 import io.netty.buffer.ByteBuf;
-import mrriegel.portals.PortalData.GlobalBlockPos;
-import mrriegel.portals.gui.ContainerPortal;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
-import net.minecraft.init.Blocks;
-import net.minecraft.inventory.Container;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.math.BlockPos;

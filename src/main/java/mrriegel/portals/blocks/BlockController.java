@@ -1,18 +1,16 @@
 package mrriegel.portals.blocks;
 
-import mrriegel.portals.PortalData;
-import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.Portals;
 import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.tile.TileController;
-import mrriegel.portals.tile.TilePortaal;
+import mrriegel.portals.util.GlobalBlockPos;
+import mrriegel.portals.util.PortalData;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumBlockRenderType;
@@ -68,7 +66,17 @@ public class BlockController extends BlockContainer {
 			}
 		}
 		super.breakBlock(worldIn, pos, state);
-		PortalData.get(worldIn).remove(new GlobalBlockPos(pos, worldIn));
+		// if (!worldIn.isRemote)
+		{
+			PortalData data = PortalData.get(worldIn);
+			data.remove(new GlobalBlockPos(pos, worldIn));
+			for (GlobalBlockPos p : data.valids) {
+				TileController t = (TileController) p.getTile(worldIn);
+				if (t != null && t.getTarget() != null && t.getTarget().equals(new GlobalBlockPos(pos, worldIn))) {
+					t.setTarget(null);
+				}
+			}
+		}
 	}
 
 	@Override

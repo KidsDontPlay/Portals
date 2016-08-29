@@ -1,11 +1,10 @@
 package mrriegel.portals.gui;
 
-import mrriegel.portals.PortalData;
 import mrriegel.portals.network.MessageData;
 import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileBase;
 import mrriegel.portals.tile.TileController;
-import net.minecraft.client.Minecraft;
+import mrriegel.portals.util.PortalData;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
@@ -33,8 +32,9 @@ public class GuiHandler implements IGuiHandler {
 		if (ID == PORTAL) {
 			return new GuiPortal(new ContainerPortal((TileController) world.getTileEntity(new BlockPos(x, y, z)), player.inventory));
 		}
-//		if (Minecraft.getMinecraft().currentScreen instanceof GuiPortal)
-//			return new GuiUpgrade((GuiPortal) Minecraft.getMinecraft().currentScreen);
+		// if (Minecraft.getMinecraft().currentScreen instanceof GuiPortal)
+		// return new GuiUpgrade((GuiPortal)
+		// Minecraft.getMinecraft().currentScreen);
 		return null;
 	}
 

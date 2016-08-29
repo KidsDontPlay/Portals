@@ -2,13 +2,13 @@ package mrriegel.portals.gui;
 
 import java.util.List;
 
-import com.google.common.collect.Lists;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiLabel;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
+
+import com.google.common.collect.Lists;
 
 public class GuiLabelExt extends GuiLabel {
 

@@ -1,24 +1,19 @@
 package mrriegel.portals.network;
 
+import io.netty.buffer.ByteBuf;
+
 import java.util.Set;
 
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-
-import io.netty.buffer.ByteBuf;
-import mrriegel.portals.PortalData;
-import mrriegel.portals.PortalData.GlobalBlockPos;
-import mrriegel.portals.gui.ContainerPortal;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.tile.TileController;
+import mrriegel.portals.util.GlobalBlockPos;
+import mrriegel.portals.util.PortalData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.inventory.Container;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 
 public class MessageData implements IMessage {
 	Set<GlobalBlockPos> data;

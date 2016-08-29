@@ -1,17 +1,14 @@
 package mrriegel.portals.gui;
 
 import java.awt.Color;
-import java.io.IOException;
 
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.client.config.GuiCheckBox;
-import net.minecraftforge.fml.client.config.GuiSlider;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.network.MessageUpgrade;
 import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.math.BlockPos;
+import net.minecraftforge.fml.client.config.GuiSlider;
 
 public class GuiUpgradeColor extends GuiUpgrade {
 
@@ -33,8 +30,8 @@ public class GuiUpgradeColor extends GuiUpgrade {
 	@Override
 	public void drawScreen(int mouseX, int mouseY, float partialTicks) {
 		super.drawScreen(mouseX, mouseY, partialTicks);
-		fontRendererObj.drawString("Portal:", guiLeft + 15, guiTop + 20, Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
-		fontRendererObj.drawString("Frame:", guiLeft + 15, guiTop + 54, Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
+		fontRendererObj.drawString("Portal:", guiLeft + 15, guiTop + 20, Color.HSBtoRGB((float) portal.getValue(), .9f, 1));
+		fontRendererObj.drawString("Frame:", guiLeft + 15, guiTop + 54, Color.HSBtoRGB((float) frame.getValue(), .9f, 1));
 		// drawRect(guiLeft + 12, guiTop + 18, guiLeft + 12+15, guiTop + 18+15,
 		// slider.getValueInt());
 	}

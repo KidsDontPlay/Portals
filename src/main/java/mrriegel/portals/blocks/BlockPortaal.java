@@ -4,10 +4,10 @@ import java.util.Random;
 
 import javax.annotation.Nullable;
 
-import mrriegel.portals.PortalEffect;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TilePortaal;
+import mrriegel.portals.util.PortalEffect;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBreakable;
 import net.minecraft.block.ITileEntityProvider;
@@ -17,11 +17,9 @@ import net.minecraft.block.properties.PropertyEnum;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.color.IBlockColor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -151,10 +149,10 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 			worldIn.playSound(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, SoundEvents.BLOCK_PORTAL_AMBIENT, SoundCategory.BLOCKS, 0.5F, rand.nextFloat() * 0.4F + 0.8F, false);
 		}
 		TileController tile = (TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController());
-		if(tile==null)
+		if (tile == null)
 			return;
-//		worldIn.markBlockRangeForRenderUpdate(pos, pos);
-//		System.out.println("tick");
+		// worldIn.markBlockRangeForRenderUpdate(pos, pos);
+		// System.out.println("tick");
 		if (tile.getUpgrades().contains(Upgrade.PARTICLE))
 			for (int i = 0; i < 4; ++i) {
 				double d0 = pos.getX() + rand.nextFloat();

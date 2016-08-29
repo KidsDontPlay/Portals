@@ -7,7 +7,6 @@ import mrriegel.portals.network.MessageUpgrade;
 import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.client.config.GuiSlider;
 
 public class GuiUpgradeParticle extends GuiUpgrade {
@@ -28,7 +27,7 @@ public class GuiUpgradeParticle extends GuiUpgrade {
 	@Override
 	public void drawScreen(int mouseX, int mouseY, float partialTicks) {
 		super.drawScreen(mouseX, mouseY, partialTicks);
-		fontRendererObj.drawString("Color:", guiLeft + 15, guiTop + 20, Color.HSBtoRGB((float) color.getValue(), .7f, 1));
+		fontRendererObj.drawString("Color:", guiLeft + 15, guiTop + 20, Color.HSBtoRGB((float) color.getValue(), .9f, 1));
 	}
 
 	@Override

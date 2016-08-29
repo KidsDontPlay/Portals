@@ -44,6 +44,7 @@ public class GuiUpgrade extends GuiScreen {
 		} else
 			super.keyTyped(typedChar, keyCode);
 	}
+
 	@Override
 	public void initGui() {
 		super.initGui();
@@ -60,14 +61,15 @@ public class GuiUpgrade extends GuiScreen {
 		super.drawScreen(mouseX, mouseY, partialTicks);
 		mc.fontRendererObj.drawString(WordUtils.capitalize(upgrade.name().toLowerCase()), guiLeft + 8, guiTop + 6, 4210752);
 	}
-	
-	protected NBTTagCompound getTag(){
+
+	protected NBTTagCompound getTag() {
 		NBTTagCompound nbt = new NBTTagCompound();
 		nbt.setInteger("id", upgrade.ordinal());
 		nbt.setLong("pos", tile.getPos().toLong());
 		return nbt;
 	}
-	
-	protected void onClosed(){};
+
+	protected void onClosed() {
+	};
 
 }

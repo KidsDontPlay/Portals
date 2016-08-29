@@ -5,26 +5,23 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import mrriegel.portals.PortalData;
-import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.Portals;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.network.MessageButton;
 import mrriegel.portals.network.MessageName;
 import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
+import mrriegel.portals.util.GlobalBlockPos;
+import mrriegel.portals.util.PortalData;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiLabel;
-import net.minecraft.client.gui.GuiListButton;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.EnumFacing.Axis;
-import net.minecraft.util.StringUtils;
-import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import org.apache.commons.lang3.text.WordUtils;
@@ -81,11 +78,18 @@ public class GuiPortal extends GuiContainer {
 	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
 		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
 		fontRendererObj.drawString("Name:", 90, 7, 0);
-		fontRendererObj.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 90, 140, Color.DARK_GRAY.getRGB());
+		fontRendererObj.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 90, 140, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.getRGB() : Color.RED.getRGB());
 		for (int i = 0; i < targetButtons.size(); i++) {
 			GuiButtonExt b = targetButtons.get(i);
 			b.displayString = targets.get(i + currentPos);
 		}
+		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
+		for (int k = 0; k < inv.getSizeInventory(); k++) {
+			if (inv.getStackInSlot(k) != null&&Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
+				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX-guiLeft, mouseY-guiTop);
+			}
+		}
+
 	}
 
 	@Override
@@ -112,8 +116,13 @@ public class GuiPortal extends GuiContainer {
 		}
 		buttonList.addAll(targetButtons);
 		maxPos = targets.size() - visibleButtons;
-		buttonList.add(new GuiButtonExt(2000, 153 + guiLeft, 38 + guiTop, 18, 12, "^"));
-		buttonList.add(new GuiButtonExt(2001, 153 + guiLeft, 114 + guiTop, 18, 12, "v"));
+		GuiButtonExt b1 = new GuiButtonExt(2000, 153 + guiLeft, 38 + guiTop, 18, 12, "^");
+		b1.enabled = false;
+		buttonList.add(b1);
+		GuiButtonExt b2 = new GuiButtonExt(2001, 153 + guiLeft, 114 + guiTop, 18, 12, "v");
+		if (maxPos == 0)
+			b2.enabled = false;
+		buttonList.add(b2);
 		currentTarget = tile.getTarget() != null && ((TileController) tile.getTarget().getTile(tile.getWorld())) != null ? ((TileController) tile.getTarget().getTile(tile.getWorld())).getName() : "";
 
 	}
@@ -127,9 +136,11 @@ public class GuiPortal extends GuiContainer {
 		} else if (button.id == 2000) {
 			if (currentPos > 0)
 				currentPos--;
+			button.enabled = currentPos != 0;
 		} else if (button.id == 2001) {
 			if (currentPos < maxPos)
 				currentPos++;
+			button.enabled = currentPos != maxPos;
 		} else {
 
 			PacketHandler.INSTANCE.sendToServer(new MessageButton(button.displayString));
@@ -137,6 +148,13 @@ public class GuiPortal extends GuiContainer {
 			if (target != null) {
 				tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
 				currentTarget = ((TileController) tile.getTarget().getTile(tile.getWorld())).getName();
+			}
+		}
+		for (GuiButton b : buttonList) {
+			if (b.id == 2000) {
+				b.enabled = currentPos != 0;
+			} else if (b.id == 2001) {
+				b.enabled = currentPos != maxPos;
 			}
 		}
 	}

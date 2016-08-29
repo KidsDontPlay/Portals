@@ -1,37 +1,27 @@
 package mrriegel.portals.tile;
 
-import java.math.BigInteger;
-import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
 
-import javax.annotation.Nullable;
-
-import mrriegel.portals.PortalData;
-import mrriegel.portals.PortalData.GlobalBlockPos;
-import mrriegel.portals.PortalTeleporter;
+import mrriegel.portals.Portals;
 import mrriegel.portals.blocks.BlockPortaal;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.network.MessageData;
-import mrriegel.portals.network.PacketHandler;
+import mrriegel.portals.util.GlobalBlockPos;
+import mrriegel.portals.util.PortalData;
+import mrriegel.portals.util.PortalTeleporter;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityList;
-import net.minecraft.entity.monster.EntityZombie;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.passive.EntityChicken;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.network.play.server.SPacketEntityTeleport;
-import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.Teleporter;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
@@ -85,7 +75,7 @@ public class TileController extends TileBase implements IPortalFrame {
 		}
 		// if (target == null)
 		// return false;
-		// if(!isPortalActive(target)){
+		// if (!isPortalActive(target)) {
 		// }
 		Axis a = null;
 		Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
@@ -349,31 +339,38 @@ public class TileController extends TileBase implements IPortalFrame {
 		if (tar == null || tar.selfLanding == null)
 			return;
 		int oldDim = entity.worldObj.provider.getDimension();
-//		Vec3d before = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
 		Teleporter tele = new PortalTeleporter((WorldServer) target.getWorld(worldObj), tar.selfLanding);
-		if (entity.worldObj.provider.getDimension() == target.getDimension()) {
+		if (oldDim == target.getDimension()) {
 			entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() + .5);
 		} else {
 			if (entity instanceof EntityPlayerMP) {
 				((EntityPlayerMP) entity).closeContainer();
 				worldObj.getMinecraftServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP) entity, target.getDimension(), tele);
-			} else
+			} else {
+				// entity.changeDimension(target.getDimension());
+
 				worldObj.getMinecraftServer().getPlayerList().transferEntityToWorld(entity, entity.worldObj.provider.getDimension(), (WorldServer) entity.worldObj, (WorldServer) target.getWorld(worldObj), tele);
-			// entity.setLocationAndAngles(tar.selfLanding.getX() + .5,
-			// tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5, 0, 0);
-			entity.setPositionAndUpdate(tar.selfLanding.getX() + .5, tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5);
-			entity.fallDistance = 0F;
-			if (oldDim == 1) {
-				target.getWorld(worldObj).spawnEntityInWorld(entity);
-				target.getWorld(worldObj).updateEntityWithOptionalForce(entity, false);
+			}// entity.setLocationAndAngles(tar.selfLanding.getX() + .5,
+				// tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5, 0,
+				// 0);
+			if (oldDim != entity.worldObj.provider.getDimension()) {
+				entity.setPositionAndUpdate(tar.selfLanding.getX() + .5, tar.selfLanding.getY() + .05, tar.selfLanding.getZ() + .5);
+				entity.fallDistance = 0F;
+				if (oldDim == 1) {
+					target.getWorld(worldObj).spawnEntityInWorld(entity);
+					target.getWorld(worldObj).updateEntityWithOptionalForce(entity, false);
+				}
+			} else {
+				Portals.logger.warn("Teleportation fail.");
 			}
+			System.out.println(entity.getDisplayName().getFormattedText() + ": " + entity.worldObj.provider.getDimension() + "  " + entity.getPosition());
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			if (entity instanceof EntityPlayerMP) {
 				EntityPlayerMP player = (EntityPlayerMP) entity;
 				player.rotationYaw = tar.looking.getHorizontalAngle();
 				// player.rotationPitch = 0f;
-				((EntityPlayerMP) player).connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+				player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			}
 		}
 		// if (tar.getUpgrades().contains(Upgrade.MOTION)) {

@@ -1,13 +1,11 @@
 package mrriegel.portals.gui;
 
-import mrriegel.portals.PortalData;
 import mrriegel.portals.init.ModItems;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.ClickType;
 import net.minecraft.inventory.Container;
-import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -53,7 +51,7 @@ public class ContainerPortal extends Container {
 			this.addSlotToContainer(new Slot(invPlayer, l, 8 + l * 18, 214));
 		}
 
-//		System.out.println(tile.getTarget());
+		// System.out.println(tile.getTarget());
 	}
 
 	@Override

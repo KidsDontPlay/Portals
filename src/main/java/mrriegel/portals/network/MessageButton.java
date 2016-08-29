@@ -1,15 +1,11 @@
 package mrriegel.portals.network;
 
 import io.netty.buffer.ByteBuf;
-import mrriegel.portals.PortalData;
-import mrriegel.portals.PortalData.GlobalBlockPos;
 import mrriegel.portals.gui.ContainerPortal;
-import mrriegel.portals.gui.GuiLabelExt;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
+import mrriegel.portals.util.GlobalBlockPos;
+import mrriegel.portals.util.PortalData;
 import net.minecraft.inventory.Container;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -48,7 +44,7 @@ public class MessageButton implements IMessage {
 					if (con instanceof ContainerPortal) {
 						TileController tile = ((ContainerPortal) con).tile;
 						TileController target = PortalData.get(ctx.getServerHandler().playerEntity.getServerWorld()).getTile(message.name);
-						if (target != null)
+						if (target != null && tile != null)
 							tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
 					}
 				}

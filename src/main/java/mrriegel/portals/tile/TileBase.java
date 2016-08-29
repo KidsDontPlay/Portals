@@ -35,9 +35,9 @@ public class TileBase extends TileEntity {
 
 	public void sync() {
 		markDirty();
-//		System.out.println("nese");
-//		if(true)
-//			return;
+		// System.out.println("nese");
+		// if(true)
+		// return;
 		if (hasWorldObj() && !worldObj.isRemote)
 			for (EntityPlayer p : worldObj.playerEntities) {
 				if (p.getPosition().getDistance(pos.getX(), pos.getY(), pos.getZ()) < 32) {

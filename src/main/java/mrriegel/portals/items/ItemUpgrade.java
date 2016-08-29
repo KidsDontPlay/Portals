@@ -2,6 +2,8 @@ package mrriegel.portals.items;
 
 import java.util.List;
 
+import org.apache.commons.lang3.text.WordUtils;
+
 import mrriegel.portals.gui.GuiPortal;
 import mrriegel.portals.gui.GuiUpgrade;
 import mrriegel.portals.gui.GuiUpgradeColor;
@@ -52,6 +54,11 @@ public class ItemUpgrade extends Item {
 	@Override
 	public String getUnlocalizedName(ItemStack stack) {
 		return super.getUnlocalizedName() + "_" + Upgrade.values()[stack.getItemDamage()].toString().toLowerCase();
+	}
+	
+	@Override
+	public String getItemStackDisplayName(ItemStack stack) {
+		return WordUtils.capitalize(Upgrade.values()[stack.getItemDamage()].name().toLowerCase())+" Upgrade";
 	}
 
 }

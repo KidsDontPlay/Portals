@@ -3,24 +3,17 @@ package mrriegel.portals;
 import java.util.Random;
 
 import mrriegel.portals.proxy.CommonProxy;
-import mrriegel.portals.tile.TileController;
-import mrriegel.portals.tile.TileFrame;
-import mrriegel.portals.tile.TilePortaal;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
-import net.minecraft.network.play.server.SPacketEntity;
-import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
@@ -30,9 +23,7 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
-import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
-import net.minecraftforge.fml.relauncher.Side;
 
 import org.apache.logging.log4j.Logger;
 
@@ -74,7 +65,7 @@ public class Portals {
 			EntityPlayerMP player = (EntityPlayerMP) e.getEntityPlayer();
 			player.rotationYaw = EnumFacing.HORIZONTALS[new Random().nextInt(EnumFacing.HORIZONTALS.length)].getHorizontalAngle();
 			player.rotationPitch = 0f;
-			((EntityPlayerMP) player).connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.chasingPosZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+			player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.chasingPosZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			// System.out.println(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(-1).getBlockState(BlockPos.ORIGIN.west(400)).getBlock());
 			// if (e.getWorld().getTileEntity(e.getPos()) instanceof TilePortaal
 			// && ((TilePortaal)
@@ -94,10 +85,8 @@ public class Portals {
 		}
 	}
 
-//	 @SubscribeEvent
+//	@SubscribeEvent
 	public void u(LivingUpdateEvent e) {
-		if (e.getEntityLiving() instanceof EntityPlayer)
-			System.out.println("vor: " + e.getEntityLiving().motionX);
 		if (true)
 			return;
 		if (!e.getEntityLiving().worldObj.isRemote) {

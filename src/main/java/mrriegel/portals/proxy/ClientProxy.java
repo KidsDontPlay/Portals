@@ -73,7 +73,7 @@ public class ClientProxy extends CommonProxy {
 				if (worldIn == null || pos == null || !(worldIn.getTileEntity(pos) instanceof IPortalFrame) || ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController() == null || !((IPortalFrame) worldIn.getTileEntity(pos)).getTileController().getUpgrades().contains(Upgrade.COLOR)) {
 					return 0xffffff;
 				}
-				return ((TileController) ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController()).getColorFrame();
+				return ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController().getColorFrame();
 			}
 		};
 		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(frame, ModBlocks.controller);
@@ -89,9 +89,9 @@ public class ClientProxy extends CommonProxy {
 				World world = Minecraft.getMinecraft().theWorld;
 				BlockPos blockpos = tile.getPos();
 				IBlockState iblockstate = Blocks.EMERALD_BLOCK.getDefaultState();
-				double xx = (double) blockpos.getX() - TileEntityRendererDispatcher.staticPlayerX;
-				double yy = (double) blockpos.getY() - TileEntityRendererDispatcher.staticPlayerY;
-				double zz = (double) blockpos.getZ() - TileEntityRendererDispatcher.staticPlayerZ;
+				double xx = blockpos.getX() - TileEntityRendererDispatcher.staticPlayerX;
+				double yy = blockpos.getY() - TileEntityRendererDispatcher.staticPlayerY;
+				double zz = blockpos.getZ() - TileEntityRendererDispatcher.staticPlayerZ;
 
 				GlStateManager.pushMatrix();
 				RenderHelper.disableStandardItemLighting();

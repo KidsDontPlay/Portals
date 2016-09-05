@@ -2,9 +2,8 @@ package mrriegel.portals.gui;
 
 import java.awt.Color;
 
+import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.network.MessageUpgrade;
-import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.client.config.GuiSlider;
@@ -13,8 +12,8 @@ public class GuiUpgradeParticle extends GuiUpgrade {
 
 	GuiSlider color;
 
-	public GuiUpgradeParticle(GuiPortal parent, TileController tile, Upgrade upgrade) {
-		super(parent, tile, upgrade);
+	public GuiUpgradeParticle(TileController tile, Upgrade upgrade) {
+		super(tile, upgrade);
 	}
 
 	@Override
@@ -32,10 +31,12 @@ public class GuiUpgradeParticle extends GuiUpgrade {
 
 	@Override
 	protected void onClosed() {
+		super.onClosed();
 		NBTTagCompound nbt = getTag();
 		nbt.setInteger("color", Color.HSBtoRGB((float) color.getValue(), .7f, 1));
 		tile.setColorPortal(Color.HSBtoRGB((float) color.getValue(), .7f, 1));
-		PacketHandler.INSTANCE.sendToServer(new MessageUpgrade(nbt));
+		NBTHelper.setInteger(nbt, "kind", tile.UPGRADE);
+		tile.sendMessage(nbt);
 	}
 
 }

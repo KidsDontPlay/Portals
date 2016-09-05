@@ -1,12 +1,9 @@
 package mrriegel.portals.gui;
 
-import mrriegel.portals.network.MessageData;
-import mrriegel.portals.network.PacketHandler;
-import mrriegel.portals.tile.TileBase;
+import mrriegel.limelib.tile.CommonTile;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.util.PortalData;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.IGuiHandler;
@@ -17,10 +14,9 @@ public class GuiHandler implements IGuiHandler {
 
 	@Override
 	public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
-		if (player instanceof EntityPlayerMP)
-			PacketHandler.INSTANCE.sendTo(new MessageData(PortalData.get(world).valids), (EntityPlayerMP) player);
-		if (world.getTileEntity(new BlockPos(x, y, z)) instanceof TileBase)
-			((TileBase) world.getTileEntity(new BlockPos(x, y, z))).sync();
+		PortalData.sync(player);
+		if (world.getTileEntity(new BlockPos(x, y, z)) instanceof CommonTile)
+			((CommonTile) world.getTileEntity(new BlockPos(x, y, z))).sync();
 		if (ID == PORTAL) {
 			return new ContainerPortal((TileController) world.getTileEntity(new BlockPos(x, y, z)), player.inventory);
 		}

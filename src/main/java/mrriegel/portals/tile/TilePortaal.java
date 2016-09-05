@@ -1,12 +1,10 @@
 package mrriegel.portals.tile;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
+import mrriegel.limelib.tile.CommonTile;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
-public class TilePortaal extends TileBase {
+public class TilePortaal extends CommonTile {
 
 	private BlockPos controller;
 
@@ -24,10 +22,6 @@ public class TilePortaal extends TileBase {
 		if (controller != null)
 			compound.setLong("controller", controller.toLong());
 		return super.writeToNBT(compound);
-	}
-
-	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
-
 	}
 
 	public BlockPos getController() {

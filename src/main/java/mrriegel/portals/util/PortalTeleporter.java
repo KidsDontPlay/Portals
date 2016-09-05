@@ -14,16 +14,12 @@ public class PortalTeleporter extends Teleporter {
 		super(worldIn);
 		this.world = worldIn;
 		this.pos = pos;
-		// System.out.println("one: "+pos);
 	}
 
 	@Override
 	public void placeInPortal(Entity entityIn, float rotationYaw) {
-		// super.placeInPortal(entityIn, rotationYaw);
 		this.world.getBlockState(pos);
 		entityIn.setPosition(pos.getX() + .5, pos.getY() + .05, pos.getZ() + .5);
-		// System.out.println("two: "+pos);
-		// System.out.println(entityIn);
 	}
 
 }

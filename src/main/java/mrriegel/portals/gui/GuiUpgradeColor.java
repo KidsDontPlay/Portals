@@ -2,9 +2,8 @@ package mrriegel.portals.gui;
 
 import java.awt.Color;
 
+import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.network.MessageUpgrade;
-import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -14,8 +13,8 @@ public class GuiUpgradeColor extends GuiUpgrade {
 
 	GuiSlider portal, frame;
 
-	public GuiUpgradeColor(GuiPortal parent, TileController tile, Upgrade upgrade) {
-		super(parent, tile, upgrade);
+	public GuiUpgradeColor(TileController tile, Upgrade upgrade) {
+		super(tile, upgrade);
 	}
 
 	@Override
@@ -38,14 +37,16 @@ public class GuiUpgradeColor extends GuiUpgrade {
 
 	@Override
 	protected void onClosed() {
+		super.onClosed();
 		NBTTagCompound nbt = getTag();
-		nbt.setInteger("colorP", Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
-		nbt.setInteger("colorF", Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
+		NBTHelper.setInteger(nbt, "colorP", Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
+		NBTHelper.setInteger(nbt, "colorF", Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
 		tile.setColorPortal(Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
 		tile.setColorFrame(Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
 		for (BlockPos pos : tile.getPortals())
 			tile.getWorld().markBlockRangeForRenderUpdate(pos, pos);
-		PacketHandler.INSTANCE.sendToServer(new MessageUpgrade(nbt));
+		NBTHelper.setInteger(nbt, "kind", tile.UPGRADE);
+		tile.sendMessage(nbt);
 	}
 
 }

@@ -4,13 +4,12 @@ import java.util.Random;
 
 import javax.annotation.Nullable;
 
+import mrriegel.limelib.block.CommonBlockContainer;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TilePortaal;
 import mrriegel.portals.util.PortalEffect;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockBreakable;
-import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.properties.PropertyEnum;
@@ -34,17 +33,15 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class BlockPortaal extends BlockBreakable implements ITileEntityProvider {
+public class BlockPortaal extends CommonBlockContainer {
 	public static final PropertyEnum<EnumFacing.Axis> AXIS = PropertyEnum.<EnumFacing.Axis> create("axis", EnumFacing.Axis.class, new EnumFacing.Axis[] { EnumFacing.Axis.X, EnumFacing.Axis.Z, EnumFacing.Axis.Y });
 	protected static final AxisAlignedBB X_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.375D, 1.0D, 1.0D, 0.625D);
 	protected static final AxisAlignedBB Z_AABB = new AxisAlignedBB(0.375D, 0.0D, 0.0D, 0.625D, 1.0D, 1.0D);
 	protected static final AxisAlignedBB Y_AABB = new AxisAlignedBB(0.0D, 0.375D, 0.0D, 1.0D, 0.625D, 1.0D);
 
 	public BlockPortaal() {
-		super(Material.PORTAL, false);
+		super(Material.PORTAL, "portaal");
 		this.setDefaultState(this.blockState.getBaseState().withProperty(AXIS, EnumFacing.Axis.X));
-		setRegistryName("portaal");
-		setUnlocalizedName(getRegistryName().toString());
 		setBlockUnbreakable();
 		// setResistance(600000F);
 	}
@@ -63,11 +60,6 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 	}
 
 	@Override
-	public boolean hasTileEntity(IBlockState state) {
-		return true;
-	}
-
-	@Override
 	@Nullable
 	public AxisAlignedBB getCollisionBoundingBox(IBlockState blockState, World worldIn, BlockPos pos) {
 		return NULL_AABB;
@@ -75,6 +67,11 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 
 	@Override
 	public boolean isFullCube(IBlockState state) {
+		return false;
+	}
+
+	@Override
+	public boolean isOpaqueCube(IBlockState state) {
 		return false;
 	}
 
@@ -188,8 +185,8 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 					if (entityIn.getEntityData().getInteger("untilPort") <= 0) {
 						tile.teleport(entityIn);
 					}
-					entityIn.getEntityData().setInteger("untilPort", 6);
 				}
+				entityIn.getEntityData().setInteger("untilPort", 9);
 			}
 		}
 	}
@@ -205,6 +202,11 @@ public class BlockPortaal extends BlockBreakable implements ITileEntityProvider 
 	@Override
 	public TileEntity createNewTileEntity(World worldIn, int meta) {
 		return new TilePortaal();
+	}
+
+	@Override
+	protected Class<? extends TileEntity> getTile() {
+		return TilePortaal.class;
 	}
 
 }

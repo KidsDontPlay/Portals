@@ -2,8 +2,7 @@ package mrriegel.portals.items;
 
 import java.util.List;
 
-import org.apache.commons.lang3.text.WordUtils;
-
+import mrriegel.limelib.item.CommonItem;
 import mrriegel.portals.gui.GuiPortal;
 import mrriegel.portals.gui.GuiUpgrade;
 import mrriegel.portals.gui.GuiUpgradeColor;
@@ -14,7 +13,9 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-public class ItemUpgrade extends Item {
+import org.apache.commons.lang3.text.WordUtils;
+
+public class ItemUpgrade extends CommonItem {
 
 	public enum Upgrade {
 		COLOR(true), DIRECTION(true), PARTICLE(true);
@@ -28,19 +29,18 @@ public class ItemUpgrade extends Item {
 		public GuiUpgrade getGUI(GuiPortal parent, TileController tile) {
 			switch (this) {
 			case COLOR:
-				return new GuiUpgradeColor(parent, tile, this);
+				return new GuiUpgradeColor(tile, this);
 			case DIRECTION:
-				return new GuiUpgradeDirection(parent, tile, this);
+				return new GuiUpgradeDirection(tile, this);
 			case PARTICLE:
-				return new GuiUpgradeParticle(parent, tile, this);
+				return new GuiUpgradeParticle(tile, this);
 			}
 			return null;
 		}
 	}
 
 	public ItemUpgrade() {
-		setRegistryName("upgrade");
-		setUnlocalizedName(getRegistryName().toString());
+		super("upgrade");
 		setCreativeTab(CreativeTabs.TRANSPORTATION);
 		setHasSubtypes(true);
 	}
@@ -55,10 +55,10 @@ public class ItemUpgrade extends Item {
 	public String getUnlocalizedName(ItemStack stack) {
 		return super.getUnlocalizedName() + "_" + Upgrade.values()[stack.getItemDamage()].toString().toLowerCase();
 	}
-	
+
 	@Override
 	public String getItemStackDisplayName(ItemStack stack) {
-		return WordUtils.capitalize(Upgrade.values()[stack.getItemDamage()].name().toLowerCase())+" Upgrade";
+		return WordUtils.capitalize(Upgrade.values()[stack.getItemDamage()].name().toLowerCase()) + " Upgrade";
 	}
 
 }

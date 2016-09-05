@@ -1,23 +1,22 @@
 package mrriegel.portals.tile;
 
 import java.util.Set;
-import java.util.function.Function;
 
+import mrriegel.limelib.helper.NBTHelper;
+import mrriegel.limelib.tile.CommonTile;
+import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.portals.Portals;
 import mrriegel.portals.blocks.BlockPortaal;
+import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.util.GlobalBlockPos;
 import mrriegel.portals.util.PortalData;
 import mrriegel.portals.util.PortalTeleporter;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.item.EntityItem;
-import net.minecraft.entity.passive.EntityChicken;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
@@ -29,11 +28,12 @@ import net.minecraft.world.chunk.Chunk;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
-public class TileController extends TileBase implements IPortalFrame {
+public class TileController extends CommonTile implements IPortalFrame {
 
 	private Set<BlockPos> frames = Sets.newHashSet(), portals = Sets.newHashSet();
 	private ItemStack[] stacks = new ItemStack[8];
@@ -43,6 +43,8 @@ public class TileController extends TileBase implements IPortalFrame {
 	private BlockPos selfLanding;
 	private int colorPortal = 0x9500fe, colorParticle = 0x9500fe, colorFrame = 0x9500fe;
 	private EnumFacing looking = EnumFacing.NORTH;
+
+	public final int BUTTON = 0, NAME = 1, UPGRADE = 2;
 
 	public static int max = 300;
 
@@ -343,6 +345,7 @@ public class TileController extends TileBase implements IPortalFrame {
 		if (oldDim == target.getDimension()) {
 			entity.setPositionAndUpdate(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .05, tar.getSelfLanding().getZ() + .5);
 		} else {
+			System.out.println(Integer.toHexString(entity.hashCode()));
 			if (entity instanceof EntityPlayerMP) {
 				((EntityPlayerMP) entity).closeContainer();
 				worldObj.getMinecraftServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP) entity, target.getDimension(), tele);
@@ -364,6 +367,7 @@ public class TileController extends TileBase implements IPortalFrame {
 				Portals.logger.warn("Teleportation fail.");
 			}
 			System.out.println(entity.getDisplayName().getFormattedText() + ": " + entity.worldObj.provider.getDimension() + "  " + entity.getPosition());
+			System.out.println(Integer.toHexString(entity.hashCode()));
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			if (entity instanceof EntityPlayerMP) {
@@ -373,6 +377,7 @@ public class TileController extends TileBase implements IPortalFrame {
 				player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			}
 		}
+		entity.getEntityData().setInteger("untilPort", 9);
 		// if (tar.getUpgrades().contains(Upgrade.MOTION)) {
 		// entity.motionX = before.xCoord;
 		// entity.motionY = before.yCoord;
@@ -392,6 +397,57 @@ public class TileController extends TileBase implements IPortalFrame {
 	}
 
 	@Override
+	public ItemStack[] getDroppingItems() {
+		return stacks;
+	}
+
+	@Override
+	public boolean openGUI(EntityPlayerMP player) {
+		player.openGui(Portals.instance, GuiHandler.PORTAL, worldObj, pos.getX(), pos.getY(), pos.getZ());
+		return true;
+	}
+
+	@Override
+	public void handleMessage(EntityPlayerMP player, NBTTagCompound nbt) {
+		switch (NBTHelper.getInteger(nbt, "kind")) {
+		case BUTTON:
+			TileController target = PortalData.get(worldObj).getTile(NBTHelper.getString(nbt, "target"));
+			if (target != null)
+				setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
+			break;
+		case NAME:
+			PortalData data = PortalData.get(worldObj);
+			String neu = NBTHelper.getString(nbt, "name");
+			if (neu.isEmpty())
+				neu = RandomStringUtils.random(10, true, true);
+			int i = 1;
+			while (data.nameOccupied(neu, new GlobalBlockPos(pos, worldObj))) {
+				neu = "Occupied" + i;
+				i++;
+			}
+			setName(neu);
+			break;
+		case UPGRADE:
+			switch (Upgrade.values()[NBTHelper.getInteger(nbt, "id")]) {
+			case COLOR:
+				setColorPortal(NBTHelper.getInteger(nbt, "colorP"));
+				setColorFrame(NBTHelper.getInteger(nbt, "colorF"));
+				break;
+			case DIRECTION:
+				setLooking(getLooking().rotateAround(Axis.Y));
+				break;
+			case PARTICLE:
+				setColorParticle(NBTHelper.getInteger(nbt, "color"));
+				break;
+			}
+			break;
+		default:
+			break;
+		}
+		sync();
+	}
+
+	@Override
 	public void readFromNBT(NBTTagCompound compound) {
 		super.readFromNBT(compound);
 		frames = new Gson().fromJson(compound.getString("frames"), new TypeToken<Set<BlockPos>>() {
@@ -401,14 +457,8 @@ public class TileController extends TileBase implements IPortalFrame {
 		active = compound.getBoolean("active");
 		privat = compound.getBoolean("privat");
 		valid = compound.getBoolean("valid");
-		if (compound.hasKey("owner"))
-			owner = compound.getString("owner");
-		else
-			owner = null;
-		if (compound.hasKey("name"))
-			name = compound.getString("name");
-		else
-			name = null;
+		owner = NBTHelper.getString(compound, "owner");
+		name = NBTHelper.getString(compound, "name");
 		target = GlobalBlockPos.loadGlobalPosFromNBT(compound);
 		if (compound.hasKey("selfLanding"))
 			selfLanding = BlockPos.fromLong(compound.getLong("selfLanding"));
@@ -418,15 +468,9 @@ public class TileController extends TileBase implements IPortalFrame {
 			looking = EnumFacing.byName(compound.getString("looking"));
 		else
 			looking = null;
-		NBTTagList nbttaglist = compound.getTagList("Items", 10);
 		this.stacks = new ItemStack[stacks.length];
-		for (int i = 0; i < nbttaglist.tagCount(); ++i) {
-			NBTTagCompound nbttagcompound = nbttaglist.getCompoundTagAt(i);
-			int j = nbttagcompound.getByte("Slot") & 255;
-			if (j >= 0 && j < this.stacks.length) {
-				this.stacks[j] = ItemStack.loadItemStackFromNBT(nbttagcompound);
-			}
-		}
+		for (int i = 0; i < stacks.length; i++)
+			stacks[i] = NBTHelper.getItemStackList(compound, "Items").get(i);
 		colorParticle = compound.getInteger("colorParticle");
 		colorPortal = compound.getInteger("colorPortal");
 		colorFrame = compound.getInteger("colorFrame");
@@ -439,26 +483,15 @@ public class TileController extends TileBase implements IPortalFrame {
 		compound.setBoolean("active", active);
 		compound.setBoolean("privat", privat);
 		compound.setBoolean("valid", valid);
-		if (owner != null)
-			compound.setString("owner", owner);
-		if (name != null)
-			compound.setString("name", name);
+		NBTHelper.setString(compound, "owner", owner);
+		NBTHelper.setString(compound, "name", name);
 		if (target != null)
 			target.writeToNBT(compound);
 		if (selfLanding != null)
 			compound.setLong("selfLanding", selfLanding.toLong());
 		if (looking != null)
 			compound.setString("looking", looking.getName2());
-		NBTTagList nbttaglist = new NBTTagList();
-		for (int i = 0; i < this.stacks.length; ++i) {
-			if (this.stacks[i] != null) {
-				NBTTagCompound nbttagcompound = new NBTTagCompound();
-				nbttagcompound.setByte("Slot", (byte) i);
-				this.stacks[i].writeToNBT(nbttagcompound);
-				nbttaglist.appendTag(nbttagcompound);
-			}
-		}
-		compound.setTag("Items", nbttaglist);
+		NBTHelper.setItemStackList(compound, "Items", Lists.newArrayList(stacks));
 		compound.setInteger("colorParticle", colorParticle);
 		compound.setInteger("colorPortal", colorPortal);
 		compound.setInteger("colorFrame", colorFrame);

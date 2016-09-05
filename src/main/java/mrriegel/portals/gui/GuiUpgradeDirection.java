@@ -2,19 +2,19 @@ package mrriegel.portals.gui;
 
 import java.io.IOException;
 
+import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.network.MessageUpgrade;
-import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.client.gui.GuiButton;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing.Axis;
 
 import org.apache.commons.lang3.text.WordUtils;
 
 public class GuiUpgradeDirection extends GuiUpgrade {
 
-	public GuiUpgradeDirection(GuiPortal parent, TileController tile, Upgrade upgrade) {
-		super(parent, tile, upgrade);
+	public GuiUpgradeDirection(TileController tile, Upgrade upgrade) {
+		super(tile, upgrade);
 	}
 
 	@Override
@@ -27,7 +27,9 @@ public class GuiUpgradeDirection extends GuiUpgrade {
 	protected void actionPerformed(GuiButton button) throws IOException {
 		tile.setLooking(tile.getLooking().rotateAround(Axis.Y));
 		button.displayString = WordUtils.capitalize(tile.getLooking().getName2().toLowerCase());
-		PacketHandler.INSTANCE.sendToServer(new MessageUpgrade(getTag()));
+		NBTTagCompound nbt = getTag();
+		NBTHelper.setInteger(nbt, "kind", tile.UPGRADE);
+		tile.sendMessage(nbt);
 	}
 
 }

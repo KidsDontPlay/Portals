@@ -1,12 +1,16 @@
 package mrriegel.portals.tile;
 
+import mrriegel.limelib.tile.CommonTile;
+import mrriegel.portals.Portals;
+import mrriegel.portals.gui.GuiHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class TileFrame extends TileBase implements IPortalFrame {
+public class TileFrame extends CommonTile implements IPortalFrame {
 
 	private BlockPos controller;
 
@@ -43,6 +47,19 @@ public class TileFrame extends TileBase implements IPortalFrame {
 	@Override
 	public TileController getTileController() {
 		return getController() != null && worldObj.getTileEntity(getController()) instanceof TileController ? (TileController) worldObj.getTileEntity(getController()) : null;
+	}
+
+	@Override
+	public boolean openGUI(EntityPlayerMP player) {
+		if (getController() != null) {
+			BlockPos con = getController();
+			if (worldObj.getTileEntity(con) instanceof TileController)
+				player.openGui(Portals.instance, GuiHandler.PORTAL, worldObj, con.getX(), con.getY(), con.getZ());
+			else
+				setController(null);
+			return true;
+		}
+		return false;
 	}
 
 }

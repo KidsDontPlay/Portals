@@ -4,41 +4,40 @@ import java.awt.Color;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-import mrriegel.portals.Portals;
+import mrriegel.limelib.gui.CommonGuiContainer;
+import mrriegel.limelib.gui.element.GuiButtonArrow;
+import mrriegel.limelib.helper.NBTHelper;
+import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.network.MessageButton;
-import mrriegel.portals.network.MessageName;
-import mrriegel.portals.network.PacketHandler;
 import mrriegel.portals.tile.TileController;
-import mrriegel.portals.util.GlobalBlockPos;
 import mrriegel.portals.util.PortalData;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiLabel;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import org.apache.commons.lang3.text.WordUtils;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
-public class GuiPortal extends GuiContainer {
-
-	private static final ResourceLocation TEXTURE = new ResourceLocation(Portals.MODID + ":textures/gui/portal.png");
+public class GuiPortal extends CommonGuiContainer {
 
 	private GuiTextField name;
 	private TileController tile;
 	private int visibleButtons, currentPos, maxPos;
 	private List<GuiButtonExt> targetButtons;
 	private List<String> targets;
+	private Map<String, String> targetMap;
 	private String currentTarget;
+	private GuiButton up, down;
 
 	public GuiPortal(Container inventorySlotsIn) {
 		super(inventorySlotsIn);
@@ -48,9 +47,10 @@ public class GuiPortal extends GuiContainer {
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		this.mc.getTextureManager().bindTexture(TEXTURE);
-		this.drawTexturedModalRect(guiLeft, guiTop, 0, 0, this.xSize, this.ySize);
+		drawBackgroundTexture();
+		drawSlots(7, 7, 1, 8);
+		drawPlayerSlots(7, 155);
+		drawRectangle(88, 137, 81, 14);
 		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
 		for (int k = 0; k < inv.getSizeInventory(); k++) {
 			if (inv.getStackInSlot(k) == null || !Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {
@@ -62,32 +62,28 @@ public class GuiPortal extends GuiContainer {
 				buttonList.get(k).displayString = WordUtils.capitalize(Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase());
 			}
 		}
+		drawTextfield(name);
 		name.drawTextBox();
-		for (GuiLabel label : labelList) {
-			if (((GuiLabelExt) label).isMouseOver()) {
-				((GuiLabelExt) label).setTextColor(0xfff0);
-				((GuiLabelExt) label).setLabelBgEnabled(true);
-			} else {
-				((GuiLabelExt) label).setTextColor(0xffffff);
-				((GuiLabelExt) label).setLabelBgEnabled(true);
-			}
-		}
 	}
 
 	@Override
 	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
 		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
 		fontRendererObj.drawString("Name:", 90, 7, 0);
-		fontRendererObj.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 90, 140, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.getRGB() : Color.RED.getRGB());
+		fontRendererObj.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 90, 140, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
 		for (int i = 0; i < targetButtons.size(); i++) {
 			GuiButtonExt b = targetButtons.get(i);
 			b.displayString = targets.get(i + currentPos);
 		}
 		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
 		for (int k = 0; k < inv.getSizeInventory(); k++) {
-			if (inv.getStackInSlot(k) != null&&Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
-				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX-guiLeft, mouseY-guiTop);
+			if (inv.getStackInSlot(k) != null && Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
+				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
 			}
+		}
+		for (GuiButton b : targetButtons) {
+			if (b.isMouseOver())
+				drawHoveringText(Lists.newArrayList(targetMap.get(b.displayString)), mouseX - guiLeft, mouseY - guiTop);
 		}
 
 	}
@@ -100,7 +96,7 @@ public class GuiPortal extends GuiContainer {
 			buttonList.add(new GuiButtonExt(i, 27 + guiLeft, 8 + i * 18 + guiTop, 60, 16, ""));
 		}
 		name = new GuiTextField(0, fontRendererObj, 92 + guiLeft, 22 + guiTop, 70, fontRendererObj.FONT_HEIGHT);
-		name.setMaxStringLength(25);
+		name.setMaxStringLength(15);
 		name.setEnableBackgroundDrawing(false);
 		name.setVisible(true);
 		name.setTextColor(16777215);
@@ -116,15 +112,30 @@ public class GuiPortal extends GuiContainer {
 		}
 		buttonList.addAll(targetButtons);
 		maxPos = targets.size() - visibleButtons;
-		GuiButtonExt b1 = new GuiButtonExt(2000, 153 + guiLeft, 38 + guiTop, 18, 12, "^");
-		b1.enabled = false;
-		buttonList.add(b1);
-		GuiButtonExt b2 = new GuiButtonExt(2001, 153 + guiLeft, 114 + guiTop, 18, 12, "v");
+		up = new GuiButtonArrow(2000, 153 + guiLeft, 38 + guiTop, Direction.UP);
+		up.enabled = false;
+		buttonList.add(up);
+		down = new GuiButtonArrow(2001, 153 + guiLeft, 114 + guiTop, Direction.DOWN);
 		if (maxPos == 0)
-			b2.enabled = false;
-		buttonList.add(b2);
+			down.enabled = false;
+		buttonList.add(down);
 		currentTarget = tile.getTarget() != null && ((TileController) tile.getTarget().getTile(tile.getWorld())) != null ? ((TileController) tile.getTarget().getTile(tile.getWorld())).getName() : "";
+		targetMap = Maps.newHashMap();
+		for (String s : targets) {
+			TileController t = PortalData.get(tile.getWorld()).getTile(s);
+			if (t != null)
+				targetMap.put(s, WordUtils.capitalizeFully(t.getWorld().provider.getDimensionType().toString()) + ", x:" + t.getPos().getX() + " y:" + t.getPos().getY() + " z:" + t.getPos().getZ());
+		}
 
+	}
+
+	@Override
+	protected void mouseReleased(int mouseX, int mouseY, int state) {
+		super.mouseReleased(mouseX, mouseY, state);
+		boolean isOverTextField = mouseX >= name.xPosition && mouseY >= name.yPosition && mouseX < name.xPosition + this.width && mouseY < name.yPosition + name.height;
+		if (state == 1 && isOverTextField)
+			name.setText("");
+		name.setFocused(isOverTextField);
 	}
 
 	@Override
@@ -136,27 +147,22 @@ public class GuiPortal extends GuiContainer {
 		} else if (button.id == 2000) {
 			if (currentPos > 0)
 				currentPos--;
-			button.enabled = currentPos != 0;
 		} else if (button.id == 2001) {
 			if (currentPos < maxPos)
 				currentPos++;
-			button.enabled = currentPos != maxPos;
 		} else {
-
-			PacketHandler.INSTANCE.sendToServer(new MessageButton(button.displayString));
+			NBTTagCompound nbt = new NBTTagCompound();
+			NBTHelper.setInteger(nbt, "kind", tile.BUTTON);
+			NBTHelper.setString(nbt, "target", button.displayString);
+			tile.sendMessage(nbt);
 			TileController target = PortalData.get(tile.getWorld()).getTile(button.displayString);
 			if (target != null) {
 				tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
 				currentTarget = ((TileController) tile.getTarget().getTile(tile.getWorld())).getName();
 			}
 		}
-		for (GuiButton b : buttonList) {
-			if (b.id == 2000) {
-				b.enabled = currentPos != 0;
-			} else if (b.id == 2001) {
-				b.enabled = currentPos != maxPos;
-			}
-		}
+		up.enabled = currentPos != 0;
+		down.enabled = currentPos != maxPos;
 	}
 
 	@Override
@@ -164,7 +170,10 @@ public class GuiPortal extends GuiContainer {
 		super.onGuiClosed();
 		Keyboard.enableRepeatEvents(false);
 		tile.setName(name.getText());
-		PacketHandler.INSTANCE.sendToServer(new MessageName(name.getText(), tile.getPos()));
+		NBTTagCompound nbt = new NBTTagCompound();
+		NBTHelper.setInteger(nbt, "kind", tile.NAME);
+		NBTHelper.setString(nbt, "name", name.getText());
+		tile.sendMessage(nbt);
 	}
 
 	@Override
@@ -172,26 +181,32 @@ public class GuiPortal extends GuiContainer {
 		if (!this.checkHotbarKeys(keyCode)) {
 			if (this.name.textboxKeyTyped(typedChar, keyCode)) {
 				tile.setName(name.getText());
-				PacketHandler.INSTANCE.sendToServer(new MessageName(name.getText(), tile.getPos()));
+				NBTTagCompound nbt = new NBTTagCompound();
+				NBTHelper.setInteger(nbt, "kind", tile.NAME);
+				NBTHelper.setString(nbt, "name", name.getText());
+				tile.sendMessage(nbt);
 			} else {
 				super.keyTyped(typedChar, keyCode);
 			}
 		}
 	}
 
-	// @Override
-	// protected void mouseClicked(int mouseX, int mouseY, int mouseButton)
-	// throws IOException {
-	// super.mouseClicked(mouseX, mouseY, mouseButton);
-	// for (GuiLabel label : labelList) {
-	// if (((GuiLabelExt) label).isMouseOver()) {
-	// TileController target =
-	// PortalData.get(tile.getWorld()).getTile(((GuiLabelExt)
-	// label).labels.get(0));
-	// tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
-	// PacketHandler.INSTANCE.sendToServer(new MessageButton(1000,
-	// target.getWorld().provider.getDimension(), target.getPos()));
-	// }
-	// }
-	// }
+	@Override
+	public void handleMouseInput() throws IOException {
+		super.handleMouseInput();
+		int i = Mouse.getX() * this.width / this.mc.displayWidth;
+		int j = this.height - Mouse.getY() * this.height / this.mc.displayHeight - 1;
+		if (!targetButtons.isEmpty() && i > targetButtons.get(0).xPosition && i < down.xPosition + down.width && j > targetButtons.get(0).yPosition && j < down.yPosition + down.height) {
+			int mouse = Mouse.getEventDWheel();
+			if (mouse == 0)
+				return;
+			if (mouse > 0 && currentPos > 0)
+				currentPos--;
+			if (mouse < 0 && currentPos < maxPos)
+				currentPos++;
+			up.enabled = currentPos != 0;
+			down.enabled = currentPos != maxPos;
+		}
+	}
+
 }

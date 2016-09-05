@@ -1,86 +1,63 @@
 package mrriegel.portals.gui;
 
+import java.util.List;
+
+import mrriegel.limelib.gui.CommonContainer;
 import mrriegel.portals.init.ModItems;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.inventory.ClickType;
-import net.minecraft.inventory.Container;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryBasic;
-import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
-public class ContainerPortal extends Container {
+import com.google.common.collect.Lists;
+
+public class ContainerPortal extends CommonContainer {
 
 	public TileController tile;
-	InventoryPlayer invPlayer;
-	InventoryBasic tmp;
+	IInventory tmp;
 
 	public ContainerPortal(final TileController tile, InventoryPlayer invPlayer) {
+		super(invPlayer, InvEntry.of("tile", new InventoryBasic("null", false, tile.getStacks().length)));
 		this.tile = tile;
-		this.invPlayer = invPlayer;
-		tmp = new InventoryBasic("null", false, tile.getStacks().length);
+		tmp = invs.get("tile");
 		for (int i = 0; i < tile.getStacks().length; i++) {
 			ItemStack k = tile.getStacks()[i];
 			tmp.setInventorySlotContents(i, k);
 		}
-		for (int i = 0; i < 8; ++i) {
-			this.addSlotToContainer(new Slot(tmp, i, 8, 8 + i * 18) {
-				@Override
-				public boolean isItemValid(ItemStack stack) {
-					if (stack == null)
-						return false;
-					boolean in = false;
-					for (ItemStack k : tile.getStacks()) {
-						if (k != null && k.getItemDamage() == stack.getItemDamage()) {
-							in = true;
-							break;
-						}
-					}
-					return !in && stack.getItem() == ModItems.upgrade;
-				}
-			});
-		}
-
-		for (int k = 0; k < 3; ++k) {
-			for (int i1 = 0; i1 < 9; ++i1) {
-				this.addSlotToContainer(new Slot(invPlayer, i1 + k * 9 + 9, 8 + i1 * 18, 156 + k * 18));
-			}
-		}
-		for (int l = 0; l < 9; ++l) {
-			this.addSlotToContainer(new Slot(invPlayer, l, 8 + l * 18, 214));
-		}
-
-		// System.out.println(tile.getTarget());
 	}
 
 	@Override
 	public boolean canInteractWith(EntityPlayer playerIn) {
-		return true;
+		return tile.isUseableByPlayer(playerIn);
 	}
 
 	@Override
 	public void onContainerClosed(EntityPlayer playerIn) {
 		super.onContainerClosed(playerIn);
-		refresh();
-		tile.sync();
+		inventoryChanged();
 	}
 
-	private void refresh() {
+	@Override
+	protected void inventoryChanged() {
 		for (int i = 0; i < tile.getStacks().length; i++) {
 			tile.getStacks()[i] = tmp.getStackInSlot(i);
 		}
+		tile.sync();
 	}
 
 	@Override
-	public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player) {
-		refresh();
-		return super.slotClick(slotId, dragType, clickTypeIn, player);
+	protected void initSlots() {
+		initPlayerSlots(8, 156);
+		setSlots(invs.get("tile"), 8, 8, 1, 8);
 	}
 
 	@Override
-	public ItemStack transferStackInSlot(EntityPlayer playerIn, int index) {
-		return null;
+	protected List<Area> allowedSlots(ItemStack stack, IInventory inv, int index) {
+		List<Area> lis = Lists.newArrayList();
+		lis.add(inv == invPlayer ? stack.getItem() == ModItems.upgrade ? getAreaforEntire(tmp) : null : getAreaforEntire(invPlayer));
+		return lis;
 	}
 
 }

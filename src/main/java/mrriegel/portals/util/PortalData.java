@@ -5,9 +5,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
+import mrriegel.limelib.helper.NBTHelper;
+import mrriegel.limelib.network.PacketHandler;
+import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.portals.init.ModBlocks;
-import mrriegel.portals.network.MessageData;
-import mrriegel.portals.network.PacketHandler;
+import mrriegel.portals.network.DataMessage;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -51,19 +55,29 @@ public class PortalData extends WorldSavedData {
 		return instance;
 	}
 
+	public static void sync(@Nullable EntityPlayer player) {
+		NBTTagCompound nbt = new NBTTagCompound();
+		if (player instanceof EntityPlayerMP) {
+			NBTHelper.setString(nbt, "data", new Gson().toJson(PortalData.get(player.worldObj).valids));
+			PacketHandler.sendTo(new DataMessage(nbt), (EntityPlayerMP) player);
+		} else
+			for (EntityPlayer p : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerList()) {
+				NBTHelper.setString(nbt, "data", new Gson().toJson(PortalData.get(p.worldObj).valids));
+				PacketHandler.sendTo(new DataMessage(nbt), (EntityPlayerMP) p);
+			}
+	}
+
 	public void add(GlobalBlockPos pos) {
 		valids.add(pos);
 		World w = pos.getWorld(null);
-		for (EntityPlayer p : w != null ? w.playerEntities : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerList())
-			PacketHandler.INSTANCE.sendTo(new MessageData(valids), (EntityPlayerMP) p);
+		sync(null);
 		markDirty();
 	}
 
 	public void remove(GlobalBlockPos pos) {
 		valids.remove(pos);
 		World w = pos.getWorld(null);
-		for (EntityPlayer p : w != null ? w.playerEntities : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerList())
-			PacketHandler.INSTANCE.sendTo(new MessageData(valids), (EntityPlayerMP) p);
+		sync(null);
 		markDirty();
 	}
 
@@ -113,8 +127,8 @@ public class PortalData extends WorldSavedData {
 		nbt.setString("valids", new Gson().toJson(valids));
 		return nbt;
 	}
-	
-	public void validate(){
+
+	public void validate() {
 		valids.removeAll(Collections.singleton(null));
 		Iterator<GlobalBlockPos> it = valids.iterator();
 		while (it.hasNext()) {

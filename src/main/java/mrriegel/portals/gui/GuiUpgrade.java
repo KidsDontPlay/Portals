@@ -49,11 +49,6 @@ public class GuiUpgrade extends CommonGuiScreenSub {
 	}
 
 	@Override
-	protected void onClosed() {
-		tile.sendOpenGUI();
-	}
-
-	@Override
 	public void drawScreen(int mouseX, int mouseY, float partialTicks) {
 		drawDefaultBackground();
 		drawer.drawBackgroundTexture();

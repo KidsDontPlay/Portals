@@ -5,6 +5,7 @@ import java.util.Random;
 import javax.annotation.Nullable;
 
 import mrriegel.limelib.block.CommonBlockContainer;
+import mrriegel.limelib.helper.TeleportationHelper;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TilePortaal;
@@ -17,8 +18,6 @@ import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -178,7 +177,7 @@ public class BlockPortaal extends CommonBlockContainer {
 
 	@Override
 	public void onEntityCollidedWithBlock(World worldIn, BlockPos pos, IBlockState state, Entity entityIn) {
-		if (!worldIn.isRemote && !entityIn.isRiding() && !entityIn.isBeingRidden() && entityIn.isNonBoss() && entityIn.isEntityAlive() && (entityIn instanceof EntityLivingBase || entityIn instanceof EntityItem)) {
+		if (TeleportationHelper.canTeleport(entityIn)) {
 			if (worldIn.getTileEntity(pos) instanceof TilePortaal && ((TilePortaal) worldIn.getTileEntity(pos)).getController() != null && worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) instanceof TileController) {
 				TileController tile = (TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController());
 				if (tile.getTarget() != null) {
@@ -186,9 +185,10 @@ public class BlockPortaal extends CommonBlockContainer {
 						tile.teleport(entityIn);
 					}
 				}
-				entityIn.getEntityData().setInteger("untilPort", 9);
 			}
 		}
+		if (entityIn != null)
+			entityIn.getEntityData().setInteger("untilPort", TileController.untilPort);
 	}
 
 	@Override

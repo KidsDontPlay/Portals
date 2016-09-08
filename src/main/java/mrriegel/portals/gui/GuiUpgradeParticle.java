@@ -35,7 +35,7 @@ public class GuiUpgradeParticle extends GuiUpgrade {
 		NBTTagCompound nbt = getTag();
 		nbt.setInteger("color", Color.HSBtoRGB((float) color.getValue(), .7f, 1));
 		tile.setColorPortal(Color.HSBtoRGB((float) color.getValue(), .7f, 1));
-		NBTHelper.setInt(nbt, "kind", tile.UPGRADE);
+		NBTHelper.setInt(nbt, "kind", TileController.UPGRADE);
 		tile.sendMessage(nbt);
 	}
 

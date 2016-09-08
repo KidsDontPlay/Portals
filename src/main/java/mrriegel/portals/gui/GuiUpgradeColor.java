@@ -45,7 +45,7 @@ public class GuiUpgradeColor extends GuiUpgrade {
 		tile.setColorFrame(Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
 		for (BlockPos pos : tile.getPortals())
 			tile.getWorld().markBlockRangeForRenderUpdate(pos, pos);
-		NBTHelper.setInt(nbt, "kind", tile.UPGRADE);
+		NBTHelper.setInt(nbt, "kind", TileController.UPGRADE);
 		tile.sendMessage(nbt);
 	}
 

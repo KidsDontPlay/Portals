@@ -14,6 +14,8 @@ import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.util.PortalData;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -33,6 +35,8 @@ import com.google.gson.Gson;
 
 public class TileController extends CommonTile implements IPortalFrame {
 
+	public static final int untilPort = 9;
+
 	private Set<BlockPos> frames = Sets.newHashSet(), portals = Sets.newHashSet();
 	private ItemStack[] stacks = new ItemStack[8];
 	private boolean privat, active, valid;
@@ -42,9 +46,9 @@ public class TileController extends CommonTile implements IPortalFrame {
 	private int colorPortal = 0x9500fe, colorParticle = 0x9500fe, colorFrame = 0x9500fe;
 	private EnumFacing looking = EnumFacing.NORTH;
 
-	public final int BUTTON = 0, NAME = 1, UPGRADE = 2;
+	public static final int BUTTON = 0, NAME = 1, UPGRADE = 2;
 
-	public static int max = 300;
+	private static int max = 300;
 
 	public boolean validatePortal() {
 		Set<EnumFacing> faces = Sets.newHashSet();
@@ -342,9 +346,8 @@ public class TileController extends CommonTile implements IPortalFrame {
 		if (oldDim == target.getDimension()) {
 			TeleportationHelper.teleportToPos(entity, tar.getSelfLanding());
 		} else {
+			entity.getEntityData().setBoolean("ported", true);
 			TeleportationHelper.teleportEntity(entity, target.getDimension(), tar.getSelfLanding());
-			if (oldDim == entity.worldObj.provider.getDimension())
-				Portals.logger.warn("Teleportation fail.");
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			if (entity instanceof EntityPlayerMP) {
@@ -353,7 +356,8 @@ public class TileController extends CommonTile implements IPortalFrame {
 				player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			}
 		}
-		entity.getEntityData().setInteger("untilPort", 9);
+		TeleportationHelper.teleportToPos(entity, tar.selfLanding);
+
 		// if (tar.getUpgrades().contains(Upgrade.MOTION)) {
 		// entity.motionX = before.xCoord;
 		// entity.motionY = before.yCoord;
@@ -596,5 +600,9 @@ public class TileController extends CommonTile implements IPortalFrame {
 	@Override
 	public TileController getTileController() {
 		return this;
+	}
+
+	public static boolean portableEntity(Entity entity) {
+		return entity instanceof EntityLivingBase || entity instanceof EntityItem;
 	}
 }

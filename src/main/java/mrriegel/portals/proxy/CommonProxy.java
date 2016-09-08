@@ -7,11 +7,10 @@ import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.init.ModItems;
 import mrriegel.portals.network.DataMessage;
+import mrriegel.portals.tile.TileController;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.item.EntityItem;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -45,13 +44,19 @@ public class CommonProxy implements IProxy {
 	public void tick(WorldTickEvent event) {
 		if (!event.world.isRemote && event.phase == Phase.START) {
 			for (Entity e : event.world.loadedEntityList) {
-				if (e instanceof EntityLivingBase || e instanceof EntityItem)
-					if(e instanceof EntityPlayerMP)
-					System.out.println(e);
+				if (TileController.portableEntity(e))
 					if (e.getEntityData().getInteger("untilPort") > 0) {
 						e.getEntityData().setInteger("untilPort", e.getEntityData().getInteger("untilPort") - 1);
 					}
 			}
+		}
+	}
+
+	@SubscribeEvent
+	public void join(EntityJoinWorldEvent event) {
+		Entity e = event.getEntity();
+		if (TileController.portableEntity(e) && e.getEntityData().getBoolean("ported")) {
+			e.getEntityData().setInteger("untilPort", TileController.untilPort);
 		}
 	}
 

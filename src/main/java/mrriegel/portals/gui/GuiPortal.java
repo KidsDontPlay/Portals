@@ -72,7 +72,7 @@ public class GuiPortal extends CommonGuiContainer {
 				drawHoveringText(Lists.newArrayList(targetMap.get(b.displayString)), mouseX - guiLeft, mouseY - guiTop);
 		}
 	}
-	
+
 	@Override
 	protected void onUpdate() {
 		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
@@ -156,7 +156,7 @@ public class GuiPortal extends CommonGuiContainer {
 				currentPos++;
 		} else {
 			NBTTagCompound nbt = new NBTTagCompound();
-			NBTHelper.setInt(nbt, "kind", tile.BUTTON);
+			NBTHelper.setInt(nbt, "kind", TileController.BUTTON);
 			NBTHelper.setString(nbt, "target", button.displayString);
 			tile.sendMessage(nbt);
 			TileController target = PortalData.get(tile.getWorld()).getTile(button.displayString);
@@ -174,7 +174,7 @@ public class GuiPortal extends CommonGuiContainer {
 		super.onGuiClosed();
 		tile.setName(name.getText());
 		NBTTagCompound nbt = new NBTTagCompound();
-		NBTHelper.setInt(nbt, "kind", tile.NAME);
+		NBTHelper.setInt(nbt, "kind", TileController.NAME);
 		NBTHelper.setString(nbt, "name", name.getText());
 		tile.sendMessage(nbt);
 	}
@@ -185,7 +185,7 @@ public class GuiPortal extends CommonGuiContainer {
 			if (this.name.textboxKeyTyped(typedChar, keyCode)) {
 				tile.setName(name.getText());
 				NBTTagCompound nbt = new NBTTagCompound();
-				NBTHelper.setInt(nbt, "kind", tile.NAME);
+				NBTHelper.setInt(nbt, "kind", TileController.NAME);
 				NBTHelper.setString(nbt, "name", name.getText());
 				tile.sendMessage(nbt);
 			} else {

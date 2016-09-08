@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import mrriegel.limelib.gui.CommonGuiContainer;
+import mrriegel.limelib.gui.GuiDrawer.Direction;
 import mrriegel.limelib.gui.element.GuiButtonArrow;
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.limelib.util.GlobalBlockPos;
@@ -47,10 +48,33 @@ public class GuiPortal extends CommonGuiContainer {
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-		drawBackgroundTexture();
-		drawSlots(7, 7, 1, 8);
-		drawPlayerSlots(7, 155);
-		drawRectangle(88, 137, 81, 14);
+		drawer.drawBackgroundTexture();
+		drawer.drawSlots(7, 7, 1, 8);
+		drawer.drawPlayerSlots(7, 155);
+		drawer.drawRectangle(88, 137, 81, 14);
+		drawer.drawTextfield(name);
+		name.drawTextBox();
+	}
+
+	@Override
+	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
+		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
+		fontRendererObj.drawString("Name:", 90, 7, 0);
+		fontRendererObj.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 90, 140, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
+		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
+		for (int k = 0; k < inv.getSizeInventory(); k++) {
+			if (inv.getStackInSlot(k) != null && Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
+				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
+			}
+		}
+		for (GuiButton b : targetButtons) {
+			if (b.isMouseOver())
+				drawHoveringText(Lists.newArrayList(targetMap.get(b.displayString)), mouseX - guiLeft, mouseY - guiTop);
+		}
+	}
+	
+	@Override
+	protected void onUpdate() {
 		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
 		for (int k = 0; k < inv.getSizeInventory(); k++) {
 			if (inv.getStackInSlot(k) == null || !Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {
@@ -62,30 +86,10 @@ public class GuiPortal extends CommonGuiContainer {
 				buttonList.get(k).displayString = WordUtils.capitalize(Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase());
 			}
 		}
-		drawTextfield(name);
-		name.drawTextBox();
-	}
-
-	@Override
-	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
-		fontRendererObj.drawString("Name:", 90, 7, 0);
-		fontRendererObj.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 90, 140, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
 		for (int i = 0; i < targetButtons.size(); i++) {
 			GuiButtonExt b = targetButtons.get(i);
 			b.displayString = targets.get(i + currentPos);
 		}
-		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
-		for (int k = 0; k < inv.getSizeInventory(); k++) {
-			if (inv.getStackInSlot(k) != null && Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
-				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
-			}
-		}
-		for (GuiButton b : targetButtons) {
-			if (b.isMouseOver())
-				drawHoveringText(Lists.newArrayList(targetMap.get(b.displayString)), mouseX - guiLeft, mouseY - guiTop);
-		}
-
 	}
 
 	@Override
@@ -152,7 +156,7 @@ public class GuiPortal extends CommonGuiContainer {
 				currentPos++;
 		} else {
 			NBTTagCompound nbt = new NBTTagCompound();
-			NBTHelper.setInteger(nbt, "kind", tile.BUTTON);
+			NBTHelper.setInt(nbt, "kind", tile.BUTTON);
 			NBTHelper.setString(nbt, "target", button.displayString);
 			tile.sendMessage(nbt);
 			TileController target = PortalData.get(tile.getWorld()).getTile(button.displayString);
@@ -168,10 +172,9 @@ public class GuiPortal extends CommonGuiContainer {
 	@Override
 	public void onGuiClosed() {
 		super.onGuiClosed();
-		Keyboard.enableRepeatEvents(false);
 		tile.setName(name.getText());
 		NBTTagCompound nbt = new NBTTagCompound();
-		NBTHelper.setInteger(nbt, "kind", tile.NAME);
+		NBTHelper.setInt(nbt, "kind", tile.NAME);
 		NBTHelper.setString(nbt, "name", name.getText());
 		tile.sendMessage(nbt);
 	}
@@ -182,7 +185,7 @@ public class GuiPortal extends CommonGuiContainer {
 			if (this.name.textboxKeyTyped(typedChar, keyCode)) {
 				tile.setName(name.getText());
 				NBTTagCompound nbt = new NBTTagCompound();
-				NBTHelper.setInteger(nbt, "kind", tile.NAME);
+				NBTHelper.setInt(nbt, "kind", tile.NAME);
 				NBTHelper.setString(nbt, "name", name.getText());
 				tile.sendMessage(nbt);
 			} else {

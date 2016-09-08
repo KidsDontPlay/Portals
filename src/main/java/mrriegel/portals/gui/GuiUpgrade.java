@@ -44,14 +44,21 @@ public class GuiUpgrade extends CommonGuiScreenSub {
 	}
 
 	@Override
+	public boolean doesGuiPauseGame() {
+		return false;
+	}
+
+	@Override
 	protected void onClosed() {
 		tile.sendOpenGUI();
 	}
 
 	@Override
-	protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-		drawBackgroundTexture();
+	public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+		drawDefaultBackground();
+		drawer.drawBackgroundTexture();
 		mc.fontRendererObj.drawString(WordUtils.capitalize(upgrade.name().toLowerCase()), guiLeft + 8, guiTop + 6, 4210752);
-	};
+		super.drawScreen(mouseX, mouseY, partialTicks);
+	}
 
 }

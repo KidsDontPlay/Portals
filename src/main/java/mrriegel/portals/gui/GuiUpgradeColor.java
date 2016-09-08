@@ -39,13 +39,13 @@ public class GuiUpgradeColor extends GuiUpgrade {
 	protected void onClosed() {
 		super.onClosed();
 		NBTTagCompound nbt = getTag();
-		NBTHelper.setInteger(nbt, "colorP", Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
-		NBTHelper.setInteger(nbt, "colorF", Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
+		NBTHelper.setInt(nbt, "colorP", Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
+		NBTHelper.setInt(nbt, "colorF", Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
 		tile.setColorPortal(Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
 		tile.setColorFrame(Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
 		for (BlockPos pos : tile.getPortals())
 			tile.getWorld().markBlockRangeForRenderUpdate(pos, pos);
-		NBTHelper.setInteger(nbt, "kind", tile.UPGRADE);
+		NBTHelper.setInt(nbt, "kind", tile.UPGRADE);
 		tile.sendMessage(nbt);
 	}
 

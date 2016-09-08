@@ -10,6 +10,7 @@ import mrriegel.portals.network.DataMessage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -45,6 +46,8 @@ public class CommonProxy implements IProxy {
 		if (!event.world.isRemote && event.phase == Phase.START) {
 			for (Entity e : event.world.loadedEntityList) {
 				if (e instanceof EntityLivingBase || e instanceof EntityItem)
+					if(e instanceof EntityPlayerMP)
+					System.out.println(e);
 					if (e.getEntityData().getInteger("untilPort") > 0) {
 						e.getEntityData().setInteger("untilPort", e.getEntityData().getInteger("untilPort") - 1);
 					}

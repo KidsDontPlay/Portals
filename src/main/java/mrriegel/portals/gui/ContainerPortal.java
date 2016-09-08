@@ -50,7 +50,7 @@ public class ContainerPortal extends CommonContainer {
 	@Override
 	protected void initSlots() {
 		initPlayerSlots(8, 156);
-		setSlots(invs.get("tile"), 8, 8, 1, 8);
+		initSlots(invs.get("tile"), 8, 8, 1, 8);
 	}
 
 	@Override

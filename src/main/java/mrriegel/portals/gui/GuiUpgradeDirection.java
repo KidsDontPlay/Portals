@@ -28,7 +28,7 @@ public class GuiUpgradeDirection extends GuiUpgrade {
 		tile.setLooking(tile.getLooking().rotateAround(Axis.Y));
 		button.displayString = WordUtils.capitalize(tile.getLooking().getName2().toLowerCase());
 		NBTTagCompound nbt = getTag();
-		NBTHelper.setInteger(nbt, "kind", tile.UPGRADE);
+		NBTHelper.setInt(nbt, "kind", tile.UPGRADE);
 		tile.sendMessage(nbt);
 	}
 

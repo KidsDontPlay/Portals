@@ -17,8 +17,8 @@ public class GuiUpgrade extends CommonGuiScreenSub {
 
 	private static final ResourceLocation textures = new ResourceLocation(Portals.MODID + ":textures/gui/upgrade.png");
 
-	TileController tile;
-	Upgrade upgrade;
+	protected TileController tile;
+	protected Upgrade upgrade;
 
 	public GuiUpgrade(TileController tile, Upgrade upgrade) {
 		super();

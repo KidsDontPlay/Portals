@@ -3,7 +3,6 @@ package mrriegel.portals.items;
 import java.util.List;
 
 import mrriegel.limelib.item.CommonItem;
-import mrriegel.portals.gui.GuiPortal;
 import mrriegel.portals.gui.GuiUpgrade;
 import mrriegel.portals.gui.GuiUpgradeColor;
 import mrriegel.portals.gui.GuiUpgradeDirection;
@@ -26,7 +25,7 @@ public class ItemUpgrade extends CommonItem {
 			this.hasButton = hasButton;
 		}
 
-		public GuiUpgrade getGUI(GuiPortal parent, TileController tile) {
+		public GuiUpgrade getGUI(TileController tile) {
 			switch (this) {
 			case COLOR:
 				return new GuiUpgradeColor(tile, this);

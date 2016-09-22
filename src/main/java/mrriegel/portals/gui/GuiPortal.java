@@ -10,7 +10,6 @@ import mrriegel.limelib.gui.CommonGuiContainer;
 import mrriegel.limelib.gui.GuiDrawer.Direction;
 import mrriegel.limelib.gui.element.GuiButtonArrow;
 import mrriegel.limelib.helper.NBTHelper;
-import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.util.PortalData;
@@ -90,6 +89,7 @@ public class GuiPortal extends CommonGuiContainer {
 			GuiButtonExt b = targetButtons.get(i);
 			b.displayString = targets.get(i + currentPos);
 		}
+		currentTarget = tile.getTargetName();
 	}
 
 	@Override
@@ -123,7 +123,7 @@ public class GuiPortal extends CommonGuiContainer {
 		if (maxPos == 0)
 			down.enabled = false;
 		buttonList.add(down);
-		currentTarget = tile.getTarget() != null && ((TileController) tile.getTarget().getTile(tile.getWorld())) != null ? ((TileController) tile.getTarget().getTile(tile.getWorld())).getName() : "";
+		currentTarget = tile.getTargetName();
 		targetMap = Maps.newHashMap();
 		for (String s : targets) {
 			TileController t = PortalData.get(tile.getWorld()).getTile(s);
@@ -145,7 +145,7 @@ public class GuiPortal extends CommonGuiContainer {
 	@Override
 	protected void actionPerformed(GuiButton button) throws IOException {
 		if (button.id < 8) {
-			GuiUpgrade gui = Upgrade.values()[((ContainerPortal) inventorySlots).tmp.getStackInSlot(button.id).getItemDamage()].getGUI(this, tile);
+			GuiUpgrade gui = Upgrade.values()[((ContainerPortal) inventorySlots).tmp.getStackInSlot(button.id).getItemDamage()].getGUI(tile);
 			if (gui != null)
 				mc.displayGuiScreen(gui);
 		} else if (button.id == 2000) {
@@ -159,11 +159,17 @@ public class GuiPortal extends CommonGuiContainer {
 			NBTHelper.setInt(nbt, "kind", TileController.BUTTON);
 			NBTHelper.setString(nbt, "target", button.displayString);
 			tile.sendMessage(nbt);
-			TileController target = PortalData.get(tile.getWorld()).getTile(button.displayString);
-			if (target != null) {
-				tile.setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
-				currentTarget = ((TileController) tile.getTarget().getTile(tile.getWorld())).getName();
-			}
+			// TileController target =
+			// PortalData.get(tile.getWorld()).getTile(button.displayString);
+			// if (target != null) {
+			// tile.setTarget(new GlobalBlockPos(target.getPos(),
+			// target.getWorld()));
+			// // System.out.println(tile.getTarget());
+			// // System.out.println(tile.getTarget().getTile(null));
+			// System.out.println(tile.getTarget().getWorld(null));
+			// // currentTarget = ((TileController)
+			// tile.getTarget().getTile(tile.getWorld())).getName();
+			// }
 		}
 		up.enabled = currentPos != 0;
 		down.enabled = currentPos != maxPos;

@@ -26,6 +26,10 @@ public class ContainerPortal extends CommonContainer {
 			ItemStack k = tile.getStacks()[i];
 			tmp.setInventorySlotContents(i, k);
 		}
+		if (!tile.getWorld().isRemote) {
+			if (tile.isActive() && !tile.isPortalActive(tile.getTarget()))
+				tile.deactivate();
+		}
 	}
 
 	@Override

@@ -1,11 +1,8 @@
 package mrriegel.portals;
 
-import java.util.Random;
-
 import mrriegel.limelib.helper.IProxy;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
-import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -53,10 +50,16 @@ public class Portals {
 	public void x(PlayerInteractEvent.RightClickBlock e) {
 		if (!e.getWorld().isRemote && e.getEntityPlayer().getHeldItemMainhand() != null && e.getEntityPlayer().getHeldItemMainhand().getItem() == Items.STICK) {
 			EntityPlayerMP player = (EntityPlayerMP) e.getEntityPlayer();
-			player.rotationYaw = EnumFacing.HORIZONTALS[new Random().nextInt(EnumFacing.HORIZONTALS.length)].getHorizontalAngle();
-			player.rotationPitch = 0f;
+			// player.rotationYaw = EnumFacing.HORIZONTALS[new
+			// Random().nextInt(EnumFacing.HORIZONTALS.length)].getHorizontalAngle();
+			// player.rotationPitch = 0f;
 			// player.connection.sendPacket(new
 			// SPacketPlayerPosLook(player.posX, player.posY,
+
+			// player.setPositionAndRotation(-261, 66, 202-1,
+			// player.rotationYaw, player.rotationPitch);
+			// TeleportationHelper.teleportToPos(player, new
+			// BlockPos(-261,66,202).north());
 		}
 	}
 }

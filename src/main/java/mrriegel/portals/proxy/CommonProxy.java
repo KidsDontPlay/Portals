@@ -4,11 +4,13 @@ import mrriegel.limelib.helper.IProxy;
 import mrriegel.limelib.network.PacketHandler;
 import mrriegel.portals.Portals;
 import mrriegel.portals.gui.GuiHandler;
+import mrriegel.portals.init.ConfigHandler;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.init.ModItems;
 import mrriegel.portals.network.DataMessage;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -24,6 +26,7 @@ public class CommonProxy implements IProxy {
 
 	@Override
 	public void preInit(FMLPreInitializationEvent event) {
+		ConfigHandler.refreshConfig(event.getSuggestedConfigurationFile());
 		ModItems.init();
 		ModBlocks.init();
 	}
@@ -43,7 +46,17 @@ public class CommonProxy implements IProxy {
 	@SubscribeEvent
 	public void tick(WorldTickEvent event) {
 		if (!event.world.isRemote && event.phase == Phase.START) {
+			for (Entity e : event.world.playerEntities) {
+				// System.out.println(e.getName());
+				if (TileController.portableEntity(e))
+					if (e.getEntityData().getInteger("untilPort") > 0) {
+						e.getEntityData().setInteger("untilPort", e.getEntityData().getInteger("untilPort") - 1);
+					}
+			}
 			for (Entity e : event.world.loadedEntityList) {
+				if (e instanceof EntityPlayerMP)
+					System.out.println(e.getName());
+				;
 				if (TileController.portableEntity(e))
 					if (e.getEntityData().getInteger("untilPort") > 0) {
 						e.getEntityData().setInteger("untilPort", e.getEntityData().getInteger("untilPort") - 1);
@@ -55,7 +68,7 @@ public class CommonProxy implements IProxy {
 	@SubscribeEvent
 	public void join(EntityJoinWorldEvent event) {
 		Entity e = event.getEntity();
-		if (TileController.portableEntity(e) && e.getEntityData().getBoolean("ported")) {
+		if (!event.getWorld().isRemote && TileController.portableEntity(e) && e.getEntityData().getBoolean("ported")) {
 			e.getEntityData().setInteger("untilPort", TileController.untilPort);
 		}
 	}

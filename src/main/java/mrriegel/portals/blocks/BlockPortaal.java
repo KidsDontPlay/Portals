@@ -144,11 +144,11 @@ public class BlockPortaal extends CommonBlockContainer {
 		if (rand.nextInt(100) == 0) {
 			worldIn.playSound(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, SoundEvents.BLOCK_PORTAL_AMBIENT, SoundCategory.BLOCKS, 0.5F, rand.nextFloat() * 0.4F + 0.8F, false);
 		}
+		if (((TilePortaal) worldIn.getTileEntity(pos)).getController() == null)
+			return;
 		TileController tile = (TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController());
 		if (tile == null)
 			return;
-		// worldIn.markBlockRangeForRenderUpdate(pos, pos);
-		// System.out.println("tick");
 		if (tile.getUpgrades().contains(Upgrade.PARTICLE))
 			for (int i = 0; i < 4; ++i) {
 				double d0 = pos.getX() + rand.nextFloat();

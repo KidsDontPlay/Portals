@@ -6,16 +6,19 @@ import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.limelib.helper.TeleportationHelper;
 import mrriegel.limelib.tile.CommonTile;
 import mrriegel.limelib.util.GlobalBlockPos;
+import mrriegel.limelib.util.Utils;
 import mrriegel.portals.Portals;
 import mrriegel.portals.blocks.BlockPortaal;
 import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.util.PortalData;
+import mrriegel.portals.util.Teleporter;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -28,27 +31,28 @@ import net.minecraft.world.chunk.Chunk;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 
+import cofh.api.energy.EnergyStorage;
+import cofh.api.energy.IEnergyReceiver;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
 
-public class TileController extends CommonTile implements IPortalFrame {
+public class TileController extends CommonTile implements IPortalFrame, IEnergyReceiver {
 
 	public static final int untilPort = 9;
+	public static final int BUTTON = 0, NAME = 1, UPGRADE = 2;
+	private static int max = 300;
 
 	private Set<BlockPos> frames = Sets.newHashSet(), portals = Sets.newHashSet();
 	private ItemStack[] stacks = new ItemStack[8];
 	private boolean privat, active, valid;
-	private String owner, name = RandomStringUtils.random(10, true, true);
+	private String owner, name = RandomStringUtils.random(10, true, true), targetName;
 	private GlobalBlockPos target;
 	private BlockPos selfLanding;
 	private int colorPortal = 0x9500fe, colorParticle = 0x9500fe, colorFrame = 0x9500fe;
 	private EnumFacing looking = EnumFacing.NORTH;
 
-	public static final int BUTTON = 0, NAME = 1, UPGRADE = 2;
-
-	private static int max = 300;
+	public EnergyStorage en = new EnergyStorage(64000, 1000, 0);
 
 	public boolean validatePortal() {
 		Set<EnumFacing> faces = Sets.newHashSet();
@@ -77,10 +81,8 @@ public class TileController extends CommonTile implements IPortalFrame {
 		if (!validatePortal()) {
 			return false;
 		}
-		// if (target == null)
-		// return false;
-		// if (!isPortalActive(target)) {
-		// }
+		if (target == null)
+			return false;
 		Axis a = null;
 		Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
 		for (BlockPos p : frames) {
@@ -149,7 +151,7 @@ public class TileController extends CommonTile implements IPortalFrame {
 		return !(portals.containsAll(set) && set.containsAll(portals));
 	}
 
-	private boolean isPortalActive(GlobalBlockPos pos) {
+	public boolean isPortalActive(GlobalBlockPos pos) {
 		if (pos == null)
 			return false;
 		boolean valid = PortalData.get(pos.getWorld(worldObj)).validPos(pos.getWorld(worldObj), pos.getPos());
@@ -162,10 +164,12 @@ public class TileController extends CommonTile implements IPortalFrame {
 		// worldObj))
 		)
 			return true;
-		for (EnumFacing face : EnumFacing.VALUES) {
-			if (pos.getWorld(worldObj).getBlockState(pos.getPos().offset(face)).getBlock() == ModBlocks.portaal)
-				return true;
-		}
+		// for (EnumFacing face : EnumFacing.VALUES) {
+		// if
+		// (pos.getWorld(worldObj).getBlockState(pos.getPos().offset(face)).getBlock()
+		// == ModBlocks.portaal)
+		// return true;
+		// }
 		return false;
 	}
 
@@ -344,10 +348,13 @@ public class TileController extends CommonTile implements IPortalFrame {
 			return;
 		int oldDim = entity.worldObj.provider.getDimension();
 		if (oldDim == target.getDimension()) {
-			TeleportationHelper.teleportToPos(entity, tar.getSelfLanding());
+			System.out.println("try");
+			TeleportationHelper.teleportToPosAndUpdate(entity, tar.getSelfLanding());
 		} else {
 			entity.getEntityData().setBoolean("ported", true);
-			TeleportationHelper.teleportEntity(entity, target.getDimension(), tar.getSelfLanding());
+			new Teleporter.TeleportLocation(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .1, tar.getSelfLanding().getZ() + .5, target.getDimension(), entity.rotationPitch, entity.rotationYaw).teleport(entity);
+			// TeleportationHelper.teleportEntity(entity, target.getDimension(),
+			// tar.getSelfLanding());
 		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			if (entity instanceof EntityPlayerMP) {
@@ -356,7 +363,15 @@ public class TileController extends CommonTile implements IPortalFrame {
 				player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			}
 		}
-		TeleportationHelper.teleportToPos(entity, tar.selfLanding);
+		boolean player = false;
+		for (Entity e : tar.worldObj.loadedEntityList)
+			if (e instanceof EntityPlayer) {
+				player = true;
+				break;
+			}
+		System.out.println("is player: " + player);
+		tar.worldObj.loadedEntityList.add(entity);
+		// TeleportationHelper.teleportToPos(entity, tar.getSelfLanding());
 
 		// if (tar.getUpgrades().contains(Upgrade.MOTION)) {
 		// entity.motionX = before.xCoord;
@@ -430,15 +445,15 @@ public class TileController extends CommonTile implements IPortalFrame {
 	@Override
 	public void readFromNBT(NBTTagCompound compound) {
 		super.readFromNBT(compound);
-		frames = new Gson().fromJson(compound.getString("frames"), new TypeToken<Set<BlockPos>>() {
-		}.getType());
-		portals = new Gson().fromJson(compound.getString("portals"), new TypeToken<Set<BlockPos>>() {
-		}.getType());
+		en.readFromNBT(compound);
+		frames = Sets.newHashSet(Utils.getBlockPosList(NBTHelper.getLongList(compound, "frames")));
+		portals = Sets.newHashSet(Utils.getBlockPosList(NBTHelper.getLongList(compound, "portals")));
 		active = compound.getBoolean("active");
 		privat = compound.getBoolean("privat");
 		valid = compound.getBoolean("valid");
 		owner = NBTHelper.getString(compound, "owner");
 		name = NBTHelper.getString(compound, "name");
+		targetName = NBTHelper.getString(compound, "targetName");
 		target = GlobalBlockPos.loadGlobalPosFromNBT(compound);
 		if (compound.hasKey("selfLanding"))
 			selfLanding = BlockPos.fromLong(compound.getLong("selfLanding"));
@@ -458,13 +473,15 @@ public class TileController extends CommonTile implements IPortalFrame {
 
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound compound) {
-		compound.setString("frames", new Gson().toJson(frames));
-		compound.setString("portals", new Gson().toJson(portals));
+		en.writeToNBT(compound);
+		NBTHelper.setLongList(compound, "frames", Utils.getLongList(Lists.newArrayList(frames)));
+		NBTHelper.setLongList(compound, "frames", Utils.getLongList(Lists.newArrayList(frames)));
 		compound.setBoolean("active", active);
 		compound.setBoolean("privat", privat);
 		compound.setBoolean("valid", valid);
 		NBTHelper.setString(compound, "owner", owner);
 		NBTHelper.setString(compound, "name", name);
+		NBTHelper.setString(compound, "targetName", targetName);
 		if (target != null)
 			target.writeToNBT(compound);
 		if (selfLanding != null)
@@ -541,6 +558,12 @@ public class TileController extends CommonTile implements IPortalFrame {
 
 	public void setTarget(GlobalBlockPos target) {
 		this.target = target;
+		if (target != null)
+			setTargetName(((TileController) getTarget().getTile(getWorld())).getName());
+		else {
+			if (active)
+				deactivate();
+		}
 	}
 
 	public BlockPos getSelfLanding() {
@@ -591,6 +614,14 @@ public class TileController extends CommonTile implements IPortalFrame {
 		this.looking = looking;
 	}
 
+	public String getTargetName() {
+		return targetName;
+	}
+
+	public void setTargetName(String targetName) {
+		this.targetName = targetName;
+	}
+
 	private static class PortalException extends RuntimeException {
 		public PortalException(String msg) {
 			super(msg);
@@ -604,5 +635,25 @@ public class TileController extends CommonTile implements IPortalFrame {
 
 	public static boolean portableEntity(Entity entity) {
 		return entity instanceof EntityLivingBase || entity instanceof EntityItem;
+	}
+
+	@Override
+	public int getEnergyStored(EnumFacing from) {
+		return en.getEnergyStored();
+	}
+
+	@Override
+	public int getMaxEnergyStored(EnumFacing from) {
+		return en.getMaxEnergyStored();
+	}
+
+	@Override
+	public boolean canConnectEnergy(EnumFacing from) {
+		return true;
+	}
+
+	@Override
+	public int receiveEnergy(EnumFacing from, int maxReceive, boolean simulate) {
+		return en.receiveEnergy(maxReceive, simulate);
 	}
 }

@@ -54,9 +54,8 @@ public class CommonProxy implements IProxy {
 					}
 			}
 			for (Entity e : event.world.loadedEntityList) {
-				if (e instanceof EntityPlayerMP)
-					System.out.println(e.getName());
-				;
+//				if (e instanceof EntityPlayerMP)
+//					System.out.println(e.getName());
 				if (TileController.portableEntity(e))
 					if (e.getEntityData().getInteger("untilPort") > 0) {
 						e.getEntityData().setInteger("untilPort", e.getEntityData().getInteger("untilPort") - 1);

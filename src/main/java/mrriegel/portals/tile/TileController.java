@@ -1,5 +1,6 @@
 package mrriegel.portals.tile;
 
+import java.util.List;
 import java.util.Set;
 
 import mrriegel.limelib.helper.NBTHelper;
@@ -13,7 +14,6 @@ import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.util.PortalData;
-import mrriegel.portals.util.Teleporter;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -347,15 +347,13 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		if (tar == null || tar.selfLanding == null)
 			return;
 		int oldDim = entity.worldObj.provider.getDimension();
-		if (oldDim == target.getDimension()) {
-			System.out.println("try");
-			TeleportationHelper.teleportToPosAndUpdate(entity, tar.getSelfLanding());
-		} else {
+//		if (oldDim == target.getDimension()) {
+//			System.out.println("try");
+//			TeleportationHelper.teleportToPosAndUpdate(entity, tar.getSelfLanding());
+//		} else {
 			entity.getEntityData().setBoolean("ported", true);
-			new Teleporter.TeleportLocation(tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .1, tar.getSelfLanding().getZ() + .5, target.getDimension(), entity.rotationPitch, entity.rotationYaw).teleport(entity);
-			// TeleportationHelper.teleportEntity(entity, target.getDimension(),
-			// tar.getSelfLanding());
-		}
+			TeleportationHelper.serverTeleport(entity,tar.getSelfLanding(), target.getDimension());
+//		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			if (entity instanceof EntityPlayerMP) {
 				EntityPlayerMP player = (EntityPlayerMP) entity;
@@ -363,14 +361,15 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			}
 		}
-		boolean player = false;
-		for (Entity e : tar.worldObj.loadedEntityList)
-			if (e instanceof EntityPlayer) {
-				player = true;
-				break;
-			}
-		System.out.println("is player: " + player);
-		tar.worldObj.loadedEntityList.add(entity);
+//		boolean player = false;
+//		for (Entity e : tar.worldObj.loadedEntityList)
+//			if (e instanceof EntityPlayer) {
+//				player = true;
+//				break;
+//			}
+//		System.out.println("is player: " + player);
+//		tar.worldObj.loadedEntityList.add(entity);
+		
 		// TeleportationHelper.teleportToPos(entity, tar.getSelfLanding());
 
 		// if (tar.getUpgrades().contains(Upgrade.MOTION)) {
@@ -392,8 +391,8 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	@Override
-	public ItemStack[] getDroppingItems() {
-		return stacks;
+	public List<ItemStack> getDroppingItems() {
+		return Lists.newArrayList(stacks);
 	}
 
 	@Override

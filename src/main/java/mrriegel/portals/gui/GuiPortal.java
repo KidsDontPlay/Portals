@@ -50,7 +50,7 @@ public class GuiPortal extends CommonGuiContainer {
 		drawer.drawBackgroundTexture();
 		drawer.drawSlots(7, 7, 1, 8);
 		drawer.drawPlayerSlots(7, 155);
-		drawer.drawRectangle(88, 137, 81, 14);
+		drawer.drawFramedRectangle(88, 137, 81, 14);
 		drawer.drawTextfield(name);
 		name.drawTextBox();
 	}

@@ -58,25 +58,23 @@ public class PortalData extends WorldSavedData {
 	public static void sync(@Nullable EntityPlayer player) {
 		NBTTagCompound nbt = new NBTTagCompound();
 		if (player instanceof EntityPlayerMP) {
-			NBTHelper.setString(nbt, "data", new Gson().toJson(PortalData.get(player.worldObj).valids));
+			NBTHelper.setString(nbt, "data", new Gson().toJson(PortalData.get(player.world).valids));
 			PacketHandler.sendTo(new DataMessage(nbt), (EntityPlayerMP) player);
 		} else
-			for (EntityPlayer p : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerList()) {
-				NBTHelper.setString(nbt, "data", new Gson().toJson(PortalData.get(p.worldObj).valids));
+			for (EntityPlayer p : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayers()) {
+				NBTHelper.setString(nbt, "data", new Gson().toJson(PortalData.get(p.world).valids));
 				PacketHandler.sendTo(new DataMessage(nbt), (EntityPlayerMP) p);
 			}
 	}
 
 	public void add(GlobalBlockPos pos) {
 		valids.add(pos);
-		World w = pos.getWorld(null);
 		sync(null);
 		markDirty();
 	}
 
 	public void remove(GlobalBlockPos pos) {
 		valids.remove(pos);
-		World w = pos.getWorld(null);
 		sync(null);
 		markDirty();
 	}
@@ -92,30 +90,31 @@ public class PortalData extends WorldSavedData {
 	public List<String> getNames() {
 		List<String> lis = Lists.newArrayList();
 		for (GlobalBlockPos p : valids) {
-			if (validPos(p.getWorld(null), p.getPos()))
-				lis.add(((TileController) p.getTile(null)).getName());
+			if (validPos(p.getWorld(), p.getPos()))
+				lis.add(((TileController) p.getTile()).getName());
 		}
 		return lis;
 	}
 
 	public TileController getTile(String name) {
 		for (GlobalBlockPos p : valids) {
-			if (validPos(p.getWorld(null), p.getPos()) && ((TileController) p.getTile(null)).getName().equals(name))
-				return (TileController) p.getTile(null);
+			if (validPos(p.getWorld(), p.getPos()) && ((TileController) p.getTile()).getName().equals(name))
+				return (TileController) p.getTile();
 		}
 		return null;
 	}
 
 	public boolean nameOccupied(String name, GlobalBlockPos p) {
 		for (GlobalBlockPos pos : valids) {
-			if (pos.getTile(null) instanceof TileController && !pos.equals(p)) {
-				if (((TileController) pos.getTile(null)).getName().equals(name))
+			if (pos.getTile() instanceof TileController && !pos.equals(p)) {
+				if (((TileController) pos.getTile()).getName().equals(name))
 					return true;
 			}
 		}
 		return false;
 	}
 
+	@SuppressWarnings("serial")
 	@Override
 	public void readFromNBT(NBTTagCompound nbt) {
 		valids = new Gson().fromJson(nbt.getString("valids"), new TypeToken<Set<GlobalBlockPos>>() {

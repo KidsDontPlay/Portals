@@ -8,7 +8,7 @@ import java.util.Map;
 
 import mrriegel.limelib.gui.CommonGuiContainer;
 import mrriegel.limelib.gui.GuiDrawer.Direction;
-import mrriegel.limelib.gui.element.GuiButtonArrow;
+import mrriegel.limelib.gui.button.GuiButtonArrow;
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
@@ -73,7 +73,8 @@ public class GuiPortal extends CommonGuiContainer {
 	}
 
 	@Override
-	protected void onUpdate() {
+	public void updateScreen() {
+		super.updateScreen();
 		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
 		for (int k = 0; k < inv.getSizeInventory(); k++) {
 			if (inv.getStackInSlot(k) == null || !Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {

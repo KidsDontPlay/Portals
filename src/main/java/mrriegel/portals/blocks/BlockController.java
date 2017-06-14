@@ -12,7 +12,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class BlockController extends CommonBlockContainer {
+public class BlockController extends CommonBlockContainer<TileController> {
 
 	public BlockController() {
 		super(Material.ROCK, "controller");
@@ -20,17 +20,17 @@ public class BlockController extends CommonBlockContainer {
 	}
 
 	@Override
-	public TileEntity createNewTileEntity(World worldIn, int meta) {
+	public TileEntity createTileEntity(World world, IBlockState state) {
 		return new TileController();
 	}
 
 	@Override
-	protected Class<? extends TileEntity> getTile() {
+	protected Class<? extends TileController> getTile() {
 		return TileController.class;
 	}
 
 	@Override
-	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
+	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos from) {
 		if (worldIn.getTileEntity(pos) instanceof TileController) {
 			TileController tile = (TileController) worldIn.getTileEntity(pos);
 			tile.validatePortal();
@@ -56,7 +56,7 @@ public class BlockController extends CommonBlockContainer {
 			PortalData data = PortalData.get(worldIn);
 			data.remove(new GlobalBlockPos(pos, worldIn));
 			for (GlobalBlockPos p : data.valids) {
-				TileController t = (TileController) p.getTile(worldIn);
+				TileController t = (TileController) p.getTile();
 				if (t != null && t.getTarget() != null && t.getTarget().equals(new GlobalBlockPos(pos, worldIn))) {
 					t.setTarget(null);
 				}

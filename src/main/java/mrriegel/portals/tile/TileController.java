@@ -67,10 +67,10 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				addFrames(faces);
 		}
 		if (valid) {
-			PortalData.get(worldObj).add(new GlobalBlockPos(pos, worldObj));
+			PortalData.get(world).add(new GlobalBlockPos(pos, world));
 			calculateLanding();
 		} else {
-			PortalData.get(worldObj).remove(new GlobalBlockPos(pos, worldObj));
+			PortalData.get(world).remove(new GlobalBlockPos(pos, world));
 			selfLanding = null;
 		}
 		sync();
@@ -97,44 +97,44 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		else if (z.size() == 1)
 			a = Axis.X;
 		for (BlockPos p : portals) {
-			worldObj.setBlockState(p, ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, a));
-			((TilePortaal) worldObj.getTileEntity(p)).setController(this.pos);
-			((TilePortaal) worldObj.getTileEntity(p)).markDirty();
+			world.setBlockState(p, ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, a));
+			((TilePortaal) world.getTileEntity(p)).setController(this.pos);
+			((TilePortaal) world.getTileEntity(p)).markDirty();
 		}
 		active = true;
 		sync();
 		for (BlockPos p : frames)
-			if (worldObj.getTileEntity(p) instanceof TileFrame)
-				((TileFrame) worldObj.getTileEntity(p)).sync();
+			if (world.getTileEntity(p) instanceof TileFrame)
+				((TileFrame) world.getTileEntity(p)).sync();
 		return true;
 
 	}
 
 	public void deactivate() {
 		for (BlockPos p : portals)
-			if (worldObj.getBlockState(p).getBlock() == ModBlocks.portaal) {
-				worldObj.setBlockToAir(p);
+			if (world.getBlockState(p).getBlock() == ModBlocks.portaal) {
+				world.setBlockToAir(p);
 			}
 		// for (BlockPos p : frames)
-		// if (worldObj.getTileEntity(p) instanceof TileFrame) {
-		// ((TileFrame) worldObj.getTileEntity(p)).setController(null);
-		// ((TileFrame) worldObj.getTileEntity(p)).sync();
+		// if (world.getTileEntity(p) instanceof TileFrame) {
+		// ((TileFrame) world.getTileEntity(p)).setController(null);
+		// ((TileFrame) world.getTileEntity(p)).sync();
 		// }
 		active = false;
 		sync();
 		for (BlockPos p : frames)
-			if (worldObj.getTileEntity(p) instanceof TileFrame)
-				((TileFrame) worldObj.getTileEntity(p)).sync();
+			if (world.getTileEntity(p) instanceof TileFrame)
+				((TileFrame) world.getTileEntity(p)).sync();
 
 	}
 
 	private void calculateLanding() {
 		Set<BlockPos> selfs = Sets.newHashSet();
 		for (BlockPos p : portals) {
-			IBlockState a = worldObj.getBlockState(p);
-			IBlockState aPlus = worldObj.getBlockState(p.up());
-			IBlockState aMinus = worldObj.getBlockState(p.down());
-			if (a.getBlock().getCollisionBoundingBox(a, worldObj, p) == null && aPlus.getBlock().getCollisionBoundingBox(aPlus, worldObj, p.up()) == null && !portals.contains(p.down())) {
+			IBlockState a = world.getBlockState(p);
+			IBlockState aPlus = world.getBlockState(p.up());
+//			IBlockState aMinus = world.getBlockState(p.down());
+			if (a.getBlock().getCollisionBoundingBox(a, world, p) == null && aPlus.getBlock().getCollisionBoundingBox(aPlus, world, p.up()) == null && !portals.contains(p.down())) {
 				selfs.add(p);
 			}
 		}
@@ -154,19 +154,19 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	public boolean isPortalActive(GlobalBlockPos pos) {
 		if (pos == null)
 			return false;
-		boolean valid = PortalData.get(pos.getWorld(worldObj)).validPos(pos.getWorld(worldObj), pos.getPos());
+		boolean valid = PortalData.get(pos.getWorld()).validPos(pos.getWorld(), pos.getPos());
 		if (!valid)
 			return false;
-		if (pos.getTile(worldObj) instanceof TileController && ((TileController) pos.getTile(worldObj)).isActive() // &&
+		if (pos.getTile() instanceof TileController && ((TileController) pos.getTile()).isActive() // &&
 		// ((TileController)
 		// pos.getTile()).getTarget().equals(new
 		// GlobalBlockPos(this.pos,
-		// worldObj))
+		// world))
 		)
 			return true;
 		// for (EnumFacing face : EnumFacing.VALUES) {
 		// if
-		// (pos.getWorld(worldObj).getBlockState(pos.getPos().offset(face)).getBlock()
+		// (pos.getWorld(world).getBlockState(pos.getPos().offset(face)).getBlock()
 		// == ModBlocks.portaal)
 		// return true;
 		// }
@@ -208,10 +208,10 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		for (BlockPos p : portals) {
 			for (EnumFacing face : faces) {
 				BlockPos pp = p.offset(face);
-				if (worldObj.getTileEntity(pp) instanceof TileFrame) {
+				if (world.getTileEntity(pp) instanceof TileFrame) {
 					frames.add(pp);
-					((TileFrame) worldObj.getTileEntity(pp)).setController(this.pos);
-					((TileFrame) worldObj.getTileEntity(pp)).sync();
+					((TileFrame) world.getTileEntity(pp)).setController(this.pos);
+					((TileFrame) world.getTileEntity(pp)).sync();
 				}
 			}
 		}
@@ -222,7 +222,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 			return;
 		for (EnumFacing face : faces) {
 			BlockPos bl = pos.offset(face);
-			Chunk chunk = worldObj.getChunkFromBlockCoords(bl);
+			Chunk chunk = world.getChunkFromBlockCoords(bl);
 			if (chunk == null || !chunk.isLoaded()) {
 				throw new PortalException("Chunk not loaded.");
 			}
@@ -233,7 +233,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				} else
 					throw new PortalException("Invalid Frame Blocks.");
 			}
-			// if (!worldObj.isAirBlock(bl) && !validFrame(bl)) {
+			// if (!world.isAirBlock(bl) && !validFrame(bl)) {
 			// throw new ChunkException("Chunk not loaded.");
 			// }
 		}
@@ -241,11 +241,11 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	private boolean validPortalPos(BlockPos p) {
-		return worldObj.isAirBlock(p) || worldObj.getBlockState(p).getBlock() == ModBlocks.portaal;
+		return world.isAirBlock(p) || world.getBlockState(p).getBlock() == ModBlocks.portaal;
 	}
 
 	private boolean validFrame(BlockPos p) {
-		return worldObj.getBlockState(p).getBlock() == ModBlocks.frame || p.equals(this.pos);
+		return world.getBlockState(p).getBlock() == ModBlocks.frame || p.equals(this.pos);
 	}
 
 	private boolean validNeighbor(BlockPos p) {
@@ -341,19 +341,19 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	public void teleport(Entity entity) {
-		if (entity == null || !valid || !active || !isPortalActive(target) || entity.worldObj.isRemote)
+		if (entity == null || !valid || !active || !isPortalActive(target) || entity.world.isRemote)
 			return;
-		TileController tar = (TileController) target.getTile(worldObj);
+		TileController tar = (TileController) target.getTile();
 		if (tar == null || tar.selfLanding == null)
 			return;
-		int oldDim = entity.worldObj.provider.getDimension();
-//		if (oldDim == target.getDimension()) {
-//			System.out.println("try");
-//			TeleportationHelper.teleportToPosAndUpdate(entity, tar.getSelfLanding());
-//		} else {
-			entity.getEntityData().setBoolean("ported", true);
-			TeleportationHelper.serverTeleport(entity,tar.getSelfLanding(), target.getDimension());
-//		}
+		//		int oldDim = entity.world.provider.getDimension();
+		//		if (oldDim == target.getDimension()) {
+		//			System.out.println("try");
+		//			TeleportationHelper.teleportToPosAndUpdate(entity, tar.getSelfLanding());
+		//		} else {
+		entity.getEntityData().setBoolean("ported", true);
+		TeleportationHelper.serverTeleport(entity, tar.getSelfLanding(), target.getDimension());
+		//		}
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			if (entity instanceof EntityPlayerMP) {
 				EntityPlayerMP player = (EntityPlayerMP) entity;
@@ -361,15 +361,15 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			}
 		}
-//		boolean player = false;
-//		for (Entity e : tar.worldObj.loadedEntityList)
-//			if (e instanceof EntityPlayer) {
-//				player = true;
-//				break;
-//			}
-//		System.out.println("is player: " + player);
-//		tar.worldObj.loadedEntityList.add(entity);
-		
+		//		boolean player = false;
+		//		for (Entity e : tar.world.loadedEntityList)
+		//			if (e instanceof EntityPlayer) {
+		//				player = true;
+		//				break;
+		//			}
+		//		System.out.println("is player: " + player);
+		//		tar.world.loadedEntityList.add(entity);
+
 		// TeleportationHelper.teleportToPos(entity, tar.getSelfLanding());
 
 		// if (tar.getUpgrades().contains(Upgrade.MOTION)) {
@@ -397,25 +397,25 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 	@Override
 	public boolean openGUI(EntityPlayerMP player) {
-		player.openGui(Portals.instance, GuiHandler.PORTAL, worldObj, pos.getX(), pos.getY(), pos.getZ());
+		player.openGui(Portals.instance, GuiHandler.PORTAL, world, pos.getX(), pos.getY(), pos.getZ());
 		return true;
 	}
 
 	@Override
-	public void handleMessage(EntityPlayerMP player, NBTTagCompound nbt) {
+	public void handleMessage(EntityPlayer player, NBTTagCompound nbt) {
 		switch (NBTHelper.getInt(nbt, "kind")) {
 		case BUTTON:
-			TileController target = PortalData.get(worldObj).getTile(NBTHelper.getString(nbt, "target"));
+			TileController target = PortalData.get(world).getTile(NBTHelper.getString(nbt, "target"));
 			if (target != null)
 				setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
 			break;
 		case NAME:
-			PortalData data = PortalData.get(worldObj);
+			PortalData data = PortalData.get(world);
 			String neu = NBTHelper.getString(nbt, "name");
 			if (neu.isEmpty())
 				neu = RandomStringUtils.random(10, true, true);
 			int i = 1;
-			while (data.nameOccupied(neu, new GlobalBlockPos(pos, worldObj))) {
+			while (data.nameOccupied(neu, new GlobalBlockPos(pos, world))) {
 				neu = "Occupied" + i;
 				i++;
 			}
@@ -558,7 +558,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	public void setTarget(GlobalBlockPos target) {
 		this.target = target;
 		if (target != null)
-			setTargetName(((TileController) getTarget().getTile(getWorld())).getName());
+			setTargetName(((TileController) getTarget().getTile()).getName());
 		else {
 			if (active)
 				deactivate();
@@ -621,6 +621,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		this.targetName = targetName;
 	}
 
+	@SuppressWarnings("serial")
 	private static class PortalException extends RuntimeException {
 		public PortalException(String msg) {
 			super(msg);

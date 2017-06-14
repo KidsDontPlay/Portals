@@ -71,11 +71,11 @@ public class ClientProxy extends CommonProxy {
 
 	// @SubscribeEvent
 	public void render(RenderWorldLastEvent event) {
-		for (TileEntity tile : Minecraft.getMinecraft().theWorld.loadedTileEntityList) {
+		for (TileEntity tile : Minecraft.getMinecraft().world.loadedTileEntityList) {
 			if (tile instanceof IPortalFrame) {
 				Minecraft.getMinecraft().renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 				BlockRendererDispatcher blockrendererdispatcher = Minecraft.getMinecraft().getBlockRendererDispatcher();
-				World world = Minecraft.getMinecraft().theWorld;
+				World world = Minecraft.getMinecraft().world;
 				BlockPos blockpos = tile.getPos();
 				IBlockState iblockstate = Blocks.EMERALD_BLOCK.getDefaultState();
 				double xx = blockpos.getX() - TileEntityRendererDispatcher.staticPlayerX;

@@ -3,19 +3,17 @@ package mrriegel.portals.gui;
 import java.io.IOException;
 
 import mrriegel.limelib.gui.CommonGuiScreenSub;
-import mrriegel.portals.Portals;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
 
 import org.apache.commons.lang3.text.WordUtils;
 import org.lwjgl.input.Keyboard;
 
 public class GuiUpgrade extends CommonGuiScreenSub {
 
-	private static final ResourceLocation textures = new ResourceLocation(Portals.MODID + ":textures/gui/upgrade.png");
+//	private static final ResourceLocation textures = new ResourceLocation(Portals.MODID + ":textures/gui/upgrade.png");
 
 	protected TileController tile;
 	protected Upgrade upgrade;

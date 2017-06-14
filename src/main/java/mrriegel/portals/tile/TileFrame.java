@@ -35,7 +35,7 @@ public class TileFrame extends CommonTile implements IPortalFrame {
 	}
 
 	public BlockPos getController() {
-		if (controller != null && !(worldObj.getTileEntity(controller) instanceof TileController))
+		if (controller != null && !(world.getTileEntity(controller) instanceof TileController))
 			controller = null;
 		return controller;
 	}
@@ -46,15 +46,15 @@ public class TileFrame extends CommonTile implements IPortalFrame {
 
 	@Override
 	public TileController getTileController() {
-		return getController() != null && worldObj.getTileEntity(getController()) instanceof TileController ? (TileController) worldObj.getTileEntity(getController()) : null;
+		return getController() != null && world.getTileEntity(getController()) instanceof TileController ? (TileController) world.getTileEntity(getController()) : null;
 	}
 
 	@Override
 	public boolean openGUI(EntityPlayerMP player) {
 		if (getController() != null) {
 			BlockPos con = getController();
-			if (worldObj.getTileEntity(con) instanceof TileController)
-				player.openGui(Portals.instance, GuiHandler.PORTAL, worldObj, con.getX(), con.getY(), con.getZ());
+			if (world.getTileEntity(con) instanceof TileController)
+				player.openGui(Portals.instance, GuiHandler.PORTAL, world, con.getX(), con.getY(), con.getZ());
 			else
 				setController(null);
 			return true;

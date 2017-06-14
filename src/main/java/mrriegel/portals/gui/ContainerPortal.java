@@ -11,6 +11,8 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.item.ItemStack;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.google.common.collect.Lists;
 
 public class ContainerPortal extends CommonContainer {
@@ -19,7 +21,7 @@ public class ContainerPortal extends CommonContainer {
 	IInventory tmp;
 
 	public ContainerPortal(final TileController tile, InventoryPlayer invPlayer) {
-		super(invPlayer, InvEntry.of("tile", new InventoryBasic("null", false, tile.getStacks().length)));
+		super(invPlayer, Pair.of("tile", new InventoryBasic("null", false, tile.getStacks().length)));
 		this.tile = tile;
 		tmp = invs.get("tile");
 		for (int i = 0; i < tile.getStacks().length; i++) {
@@ -34,7 +36,7 @@ public class ContainerPortal extends CommonContainer {
 
 	@Override
 	public boolean canInteractWith(EntityPlayer playerIn) {
-		return tile.isUseableByPlayer(playerIn);
+		return tile.isUsable(playerIn);
 	}
 
 	@Override
@@ -48,7 +50,7 @@ public class ContainerPortal extends CommonContainer {
 		for (int i = 0; i < tile.getStacks().length; i++) {
 			tile.getStacks()[i] = tmp.getStackInSlot(i);
 		}
-		tile.sync();
+		tile.markForSync();;
 	}
 
 	@Override
@@ -60,7 +62,7 @@ public class ContainerPortal extends CommonContainer {
 	@Override
 	protected List<Area> allowedSlots(ItemStack stack, IInventory inv, int index) {
 		List<Area> lis = Lists.newArrayList();
-		lis.add(inv == invPlayer ? stack.getItem() == ModItems.upgrade ? getAreaforEntire(tmp) : null : getAreaforEntire(invPlayer));
+		lis.add(inv == invPlayer ? stack.getItem() == ModItems.upgrade ? getAreaForEntireInv(tmp) : null : getAreaForEntireInv(invPlayer));
 		return lis;
 	}
 

@@ -4,7 +4,6 @@ import java.util.Set;
 
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.limelib.network.AbstractMessage;
-import mrriegel.limelib.network.WorldDataMessage;
 import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.portals.util.PortalData;
 import net.minecraft.entity.player.EntityPlayer;
@@ -23,10 +22,10 @@ public class DataMessage extends AbstractMessage<DataMessage> {
 		super(nbt);
 	}
 
+	@SuppressWarnings("serial")
 	@Override
 	public void handleMessage(EntityPlayer arg0, NBTTagCompound arg1, Side arg2) {
-		PortalData.get(arg0.worldObj).valids = new Gson().fromJson(NBTHelper.getString(arg1, "data"), new TypeToken<Set<GlobalBlockPos>>() {
+		PortalData.get(arg0.world).valids = new Gson().fromJson(NBTHelper.getString(arg1, "data"), new TypeToken<Set<GlobalBlockPos>>() {
 		}.getType());
-		WorldDataMessage f;
 	}
 }

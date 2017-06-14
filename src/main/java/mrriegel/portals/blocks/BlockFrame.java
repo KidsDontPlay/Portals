@@ -11,7 +11,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class BlockFrame extends CommonBlockContainer {
+public class BlockFrame extends CommonBlockContainer<TileFrame> {
 
 	public BlockFrame() {
 		super(Material.ROCK, "frame");
@@ -19,17 +19,17 @@ public class BlockFrame extends CommonBlockContainer {
 	}
 
 	@Override
-	public TileEntity createNewTileEntity(World worldIn, int meta) {
+	public TileEntity createTileEntity(World worldIn, IBlockState state) {
 		return new TileFrame();
 	}
 
 	@Override
-	protected Class<? extends TileEntity> getTile() {
+	protected Class<? extends TileFrame> getTile() {
 		return TileFrame.class;
 	}
 
 	@Override
-	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
+	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos from) {
 		TileEntity tileentity = worldIn.getTileEntity(pos);
 		if (tileentity instanceof TileFrame && ((TileFrame) tileentity).getController() != null) {
 			BlockPos con = ((TileFrame) tileentity).getController();

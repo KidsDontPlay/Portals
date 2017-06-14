@@ -1,7 +1,5 @@
 package mrriegel.portals.items;
 
-import java.util.List;
-
 import mrriegel.limelib.item.CommonItem;
 import mrriegel.portals.gui.GuiUpgrade;
 import mrriegel.portals.gui.GuiUpgradeColor;
@@ -11,6 +9,7 @@ import mrriegel.portals.tile.TileController;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.NonNullList;
 
 import org.apache.commons.lang3.text.WordUtils;
 
@@ -45,7 +44,7 @@ public class ItemUpgrade extends CommonItem {
 	}
 
 	@Override
-	public void getSubItems(Item itemIn, CreativeTabs tab, List<ItemStack> subItems) {
+	public void getSubItems(Item itemIn, CreativeTabs tab, NonNullList<ItemStack> subItems) {
 		for (Upgrade u : Upgrade.values())
 			subItems.add(new ItemStack(itemIn, 1, u.ordinal()));
 	}

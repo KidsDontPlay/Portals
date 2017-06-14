@@ -32,7 +32,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class BlockPortaal extends CommonBlockContainer {
+public class BlockPortaal extends CommonBlockContainer<TilePortaal> {
 	public static final PropertyEnum<EnumFacing.Axis> AXIS = PropertyEnum.<EnumFacing.Axis> create("axis", EnumFacing.Axis.class, new EnumFacing.Axis[] { EnumFacing.Axis.X, EnumFacing.Axis.Z, EnumFacing.Axis.Y });
 	protected static final AxisAlignedBB X_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.375D, 1.0D, 1.0D, 0.625D);
 	protected static final AxisAlignedBB Z_AABB = new AxisAlignedBB(0.375D, 0.0D, 0.0D, 0.625D, 1.0D, 1.0D);
@@ -42,7 +42,7 @@ public class BlockPortaal extends CommonBlockContainer {
 		super(Material.PORTAL, "portaal");
 		this.setDefaultState(this.blockState.getBaseState().withProperty(AXIS, EnumFacing.Axis.X));
 		setBlockUnbreakable();
-		// setResistance(600000F);
+		setResistance(600000F);
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class BlockPortaal extends CommonBlockContainer {
 
 	@Override
 	@Nullable
-	public AxisAlignedBB getCollisionBoundingBox(IBlockState blockState, World worldIn, BlockPos pos) {
+	public AxisAlignedBB getCollisionBoundingBox(IBlockState blockState, IBlockAccess worldIn, BlockPos pos) {
 		return NULL_AABB;
 	}
 
@@ -77,7 +77,7 @@ public class BlockPortaal extends CommonBlockContainer {
 	@Override
 	@SideOnly(Side.CLIENT)
 	public boolean shouldSideBeRendered(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
-		if (true)
+		if ("".isEmpty())
 			return true;
 		pos = pos.offset(side);
 		EnumFacing.Axis enumfacing$axis = null;
@@ -119,7 +119,7 @@ public class BlockPortaal extends CommonBlockContainer {
 	@Override
 	@Nullable
 	public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
@@ -192,7 +192,7 @@ public class BlockPortaal extends CommonBlockContainer {
 	}
 
 	@Override
-	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
+	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos from) {
 		if (worldIn.getTileEntity(pos) instanceof TilePortaal && ((TilePortaal) worldIn.getTileEntity(pos)).getController() != null && worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) instanceof TileController) {
 			((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).validatePortal();
 		} else
@@ -200,12 +200,12 @@ public class BlockPortaal extends CommonBlockContainer {
 	}
 
 	@Override
-	public TileEntity createNewTileEntity(World worldIn, int meta) {
+	public TileEntity createTileEntity(World worldIn, IBlockState state) {
 		return new TilePortaal();
 	}
 
 	@Override
-	protected Class<? extends TileEntity> getTile() {
+	protected Class<? extends TilePortaal> getTile() {
 		return TilePortaal.class;
 	}
 

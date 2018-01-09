@@ -2,152 +2,160 @@ package mrriegel.portals.gui;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import mrriegel.limelib.gui.CommonGuiContainer;
-import mrriegel.limelib.gui.GuiDrawer.Direction;
-import mrriegel.limelib.gui.element.GuiButtonArrow;
-import mrriegel.limelib.helper.NBTHelper;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.tile.TileController;
-import mrriegel.portals.util.PortalData;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.inventory.Container;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import org.apache.commons.lang3.text.WordUtils;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+
+import mrriegel.limelib.gui.CommonGuiContainer;
+import mrriegel.limelib.gui.GuiDrawer;
+import mrriegel.limelib.gui.GuiDrawer.Direction;
+import mrriegel.limelib.gui.button.CommonGuiButton;
+import mrriegel.limelib.gui.button.CommonGuiButton.Design;
+import mrriegel.limelib.gui.button.GuiButtonArrow;
+import mrriegel.limelib.helper.ColorHelper;
+import mrriegel.limelib.helper.NBTHelper;
+import mrriegel.limelib.util.GlobalBlockPos;
+import mrriegel.portals.items.ItemUpgrade.Upgrade;
+import mrriegel.portals.tile.TileController;
+import mrriegel.portals.util.PortalWorldData;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.inventory.Container;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.nbt.NBTTagCompound;
 
 public class GuiPortal extends CommonGuiContainer {
 
 	private GuiTextField name;
 	private TileController tile;
 	private int visibleButtons, currentPos, maxPos;
-	private List<GuiButtonExt> targetButtons;
+	private List<GuiButton> targetButtons;
 	private List<String> targets;
-	private Map<String, String> targetMap;
+	//	private Map<String, String> targetMap;
 	private String currentTarget;
 	private GuiButton up, down;
 
 	public GuiPortal(Container inventorySlotsIn) {
 		super(inventorySlotsIn);
-		tile = ((ContainerPortal) inventorySlotsIn).tile;
-		ySize = 238;
-	}
+		tile = ((ContainerPortal) inventorySlotsIn).getTile();
+		ySize = 166;
+		xSize = 220;
 
-	@Override
-	protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-		drawer.drawBackgroundTexture();
-		drawer.drawSlots(7, 7, 1, 8);
-		drawer.drawPlayerSlots(7, 155);
-		drawer.drawFramedRectangle(88, 137, 81, 14);
-		drawer.drawTextfield(name);
-		name.drawTextBox();
-	}
-
-	@Override
-	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
-		fontRendererObj.drawString("Name:", 90, 7, 0);
-		fontRendererObj.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 90, 140, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
-		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
-		for (int k = 0; k < inv.getSizeInventory(); k++) {
-			if (inv.getStackInSlot(k) != null && Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
-				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
-			}
-		}
-		for (GuiButton b : targetButtons) {
-			if (b.isMouseOver())
-				drawHoveringText(Lists.newArrayList(targetMap.get(b.displayString)), mouseX - guiLeft, mouseY - guiTop);
-		}
-	}
-
-	@Override
-	protected void onUpdate() {
-		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
-		for (int k = 0; k < inv.getSizeInventory(); k++) {
-			if (inv.getStackInSlot(k) == null || !Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {
-				buttonList.get(k).enabled = false;
-				buttonList.get(k).visible = false;
-			} else if (Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {
-				buttonList.get(k).enabled = true;
-				buttonList.get(k).visible = true;
-				buttonList.get(k).displayString = WordUtils.capitalize(Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase());
-			}
-		}
-		for (int i = 0; i < targetButtons.size(); i++) {
-			GuiButtonExt b = targetButtons.get(i);
-			b.displayString = targets.get(i + currentPos);
-		}
-		currentTarget = tile.getTargetName();
 	}
 
 	@Override
 	public void initGui() {
 		super.initGui();
 		Keyboard.enableRepeatEvents(true);
-		for (int i = 0; i < 8; i++) {
-			buttonList.add(new GuiButtonExt(i, 27 + guiLeft, 8 + i * 18 + guiTop, 60, 16, ""));
+		for (int i = 0; i < 4; i++) {
+			GuiButton b = new CommonGuiButton(i, 196 + guiLeft, 12 + 18 * 4 + i * 18 + guiTop, 16, 16, "...");
+			b.visible = false;
+			buttonList.add(b);
 		}
-		name = new GuiTextField(0, fontRendererObj, 92 + guiLeft, 22 + guiTop, 70, fontRendererObj.FONT_HEIGHT);
+		name = new GuiTextField(0, fontRenderer, 36 + guiLeft, 7 + guiTop, 90, fontRenderer.FONT_HEIGHT);
 		name.setMaxStringLength(15);
-		name.setEnableBackgroundDrawing(false);
-		name.setVisible(true);
 		name.setTextColor(16777215);
-		name.setText(((ContainerPortal) inventorySlots).tile.getName());
+		name.setText(((ContainerPortal) inventorySlots).getTile().getName());
 		name.setFocused(true);
-		targets = Lists.newArrayList(PortalData.get(tile.getWorld()).getNames());
+		targets = new ArrayList<>(PortalWorldData.getData(mc.world).getNames());
 		targets.remove(tile.getName());
-		Collections.sort(targets);
+		targets.sort((s1, s2) -> s1.toLowerCase().compareTo(s2.toLowerCase()));
 		visibleButtons = Math.min(5, targets.size());
 		targetButtons = Lists.newArrayList();
 		for (int i = 0; i < visibleButtons; i++) {
-			targetButtons.add(new GuiButtonExt(i + 1000, 92 + guiLeft, 38 + i * 18 + guiTop, 60, 16, ""));
+			targetButtons.add(new CommonGuiButton(i + 1000, 10 + guiLeft, 21 + i * (fontRenderer.FONT_HEIGHT + 2) + guiTop, 95, fontRenderer.FONT_HEIGHT + 2, "") {
+				@Override
+				public void drawButton(Minecraft mc, int mouseX, int mouseY, float partial) {
+					if (isMouseOver())
+						drawer.drawColoredRectangle(x - 1, y, width, height, ColorHelper.getRGB(0x040404, 100));
+					super.drawButton(mc, mouseX, mouseY, partial);
+				}
+			}.setDesign(Design.NONE));
 		}
 		buttonList.addAll(targetButtons);
 		maxPos = targets.size() - visibleButtons;
-		up = new GuiButtonArrow(2000, 153 + guiLeft, 38 + guiTop, Direction.UP);
+		up = new GuiButtonArrow(2000, 108 + guiLeft, 20 + guiTop, Direction.UP);
 		up.enabled = false;
 		buttonList.add(up);
-		down = new GuiButtonArrow(2001, 153 + guiLeft, 114 + guiTop, Direction.DOWN);
+		down = new GuiButtonArrow(2001, 108 + guiLeft, 68 + guiTop, Direction.DOWN);
 		if (maxPos == 0)
 			down.enabled = false;
 		buttonList.add(down);
-		currentTarget = tile.getTargetName();
-		targetMap = Maps.newHashMap();
-		for (String s : targets) {
-			TileController t = PortalData.get(tile.getWorld()).getTile(s);
-			if (t != null)
-				targetMap.put(s, WordUtils.capitalizeFully(t.getWorld().provider.getDimensionType().toString()) + ", x:" + t.getPos().getX() + " y:" + t.getPos().getY() + " z:" + t.getPos().getZ());
-		}
-
 	}
 
 	@Override
-	protected void mouseReleased(int mouseX, int mouseY, int state) {
-		super.mouseReleased(mouseX, mouseY, state);
-		boolean isOverTextField = mouseX >= name.xPosition && mouseY >= name.yPosition && mouseX < name.xPosition + this.width && mouseY < name.yPosition + name.height;
-		if (state == 1 && isOverTextField)
+	protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+		drawDefaultBackground();
+		drawer.drawBackgroundTexture();
+		drawer.drawFramedRectangle(7, 19, 100, 60);
+		super.drawGuiContainerBackgroundLayer(partialTicks, mouseX, mouseY);
+		drawer.drawSlots(175, 11 + 18 * 4, 1, 4);
+		drawer.drawPlayerSlots(7, 11 + 18 * 4);
+		double percent = maxPos == 0. ? 0. : (currentPos + 0.) / (maxPos + 0.);
+		drawer.drawColoredRectangle(110, 30 + (int) (percent * 36), 14, 2, 0xFF050505);
+		name.drawTextBox();
+		fontRenderer.drawString("Name:", 7 + guiLeft, 7 + guiTop, 0x040404, !true);
+		fontRenderer.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 100 + guiLeft, 50 + guiTop, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
+	}
+
+	@Override
+	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
+		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
+		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
+		for (int k = 0; k < inv.getSizeInventory(); k++) {
+			if (!inv.getStackInSlot(k).isEmpty() && Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
+				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
+			}
+		}
+		PortalWorldData pwd = PortalWorldData.getData(mc.world);
+		for (GuiButton b : targetButtons) {
+			if (b.isMouseOver()) {
+				GlobalBlockPos gbp = pwd.posMap.get(b.displayString);
+				if (gbp != null)
+					drawHoveringText(Lists.newArrayList(WordUtils.capitalizeFully("Dim:" + gbp.getDimension() + ", x:" + gbp.getPos().getX() + " y:" + gbp.getPos().getY() + " z:" + gbp.getPos().getZ())), mouseX - guiLeft, mouseY - guiTop);
+			}
+		}
+	}
+
+	@Override
+	public void updateScreen() {
+		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
+		for (int k = 0; k < inv.getSizeInventory(); k++) {
+			if (inv.getStackInSlot(k).isEmpty() || !Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {
+				buttonList.get(k).visible = false;
+			} else if (Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton) {
+				buttonList.get(k).visible = true;
+				((CommonGuiButton) buttonList.get(k)).setTooltip(WordUtils.capitalize(Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase()));
+			}
+		}
+		for (int i = 0; i < targetButtons.size(); i++) {
+			GuiButton b = targetButtons.get(i);
+			b.displayString = targets.get(i + currentPos);
+		}
+		currentTarget = tile.getTargetName();
+	}
+
+	@Override
+	protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+		super.mouseClicked(mouseX, mouseY, mouseButton);
+		name.mouseClicked(mouseX, mouseY, mouseButton);
+		if (mouseButton == 1)
 			name.setText("");
-		name.setFocused(isOverTextField);
 	}
 
 	@Override
 	protected void actionPerformed(GuiButton button) throws IOException {
-		if (button.id < 8) {
+		if (button.id < 4) {
 			GuiUpgrade gui = Upgrade.values()[((ContainerPortal) inventorySlots).tmp.getStackInSlot(button.id).getItemDamage()].getGUI(tile);
 			if (gui != null)
-				mc.displayGuiScreen(gui);
+				GuiDrawer.openGui(gui);
 		} else if (button.id == 2000) {
 			if (currentPos > 0)
 				currentPos--;
@@ -156,20 +164,10 @@ public class GuiPortal extends CommonGuiContainer {
 				currentPos++;
 		} else {
 			NBTTagCompound nbt = new NBTTagCompound();
-			NBTHelper.setInt(nbt, "kind", TileController.BUTTON);
-			NBTHelper.setString(nbt, "target", button.displayString);
+			NBTHelper.set(nbt, "kind", TileController.BUTTON);
+			NBTHelper.set(nbt, "target", button.displayString);
 			tile.sendMessage(nbt);
-			// TileController target =
-			// PortalData.get(tile.getWorld()).getTile(button.displayString);
-			// if (target != null) {
-			// tile.setTarget(new GlobalBlockPos(target.getPos(),
-			// target.getWorld()));
-			// // System.out.println(tile.getTarget());
-			// // System.out.println(tile.getTarget().getTile(null));
-			// System.out.println(tile.getTarget().getWorld(null));
-			// // currentTarget = ((TileController)
-			// tile.getTarget().getTile(tile.getWorld())).getName();
-			// }
+			tile.handleMessage(mc.player, nbt);
 		}
 		up.enabled = currentPos != 0;
 		down.enabled = currentPos != maxPos;
@@ -178,22 +176,22 @@ public class GuiPortal extends CommonGuiContainer {
 	@Override
 	public void onGuiClosed() {
 		super.onGuiClosed();
-		tile.setName(name.getText());
 		NBTTagCompound nbt = new NBTTagCompound();
-		NBTHelper.setInt(nbt, "kind", TileController.NAME);
-		NBTHelper.setString(nbt, "name", name.getText());
+		NBTHelper.set(nbt, "kind", TileController.NAME);
+		NBTHelper.set(nbt, "name", name.getText());
 		tile.sendMessage(nbt);
+		tile.handleMessage(mc.player, nbt);
 	}
 
 	@Override
 	protected void keyTyped(char typedChar, int keyCode) throws IOException {
 		if (!this.checkHotbarKeys(keyCode)) {
 			if (this.name.textboxKeyTyped(typedChar, keyCode)) {
-				tile.setName(name.getText());
 				NBTTagCompound nbt = new NBTTagCompound();
-				NBTHelper.setInt(nbt, "kind", TileController.NAME);
-				NBTHelper.setString(nbt, "name", name.getText());
+				NBTHelper.set(nbt, "kind", TileController.NAME);
+				NBTHelper.set(nbt, "name", name.getText());
 				tile.sendMessage(nbt);
+				tile.handleMessage(mc.player, nbt);
 			} else {
 				super.keyTyped(typedChar, keyCode);
 			}
@@ -203,9 +201,9 @@ public class GuiPortal extends CommonGuiContainer {
 	@Override
 	public void handleMouseInput() throws IOException {
 		super.handleMouseInput();
-		int i = Mouse.getX() * this.width / this.mc.displayWidth;
-		int j = this.height - Mouse.getY() * this.height / this.mc.displayHeight - 1;
-		if (!targetButtons.isEmpty() && i > targetButtons.get(0).xPosition && i < down.xPosition + down.width && j > targetButtons.get(0).yPosition && j < down.yPosition + down.height) {
+		int i = GuiDrawer.getMouseX();
+		int j = GuiDrawer.getMouseY();
+		if (!targetButtons.isEmpty() && i > targetButtons.get(0).x && i < down.x + down.width && j > targetButtons.get(0).y && j < down.y + down.height) {
 			int mouse = Mouse.getEventDWheel();
 			if (mouse == 0)
 				return;

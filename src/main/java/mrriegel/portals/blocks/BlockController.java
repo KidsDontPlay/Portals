@@ -3,16 +3,15 @@ package mrriegel.portals.blocks;
 import mrriegel.limelib.block.CommonBlockContainer;
 import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.portals.tile.TileController;
-import mrriegel.portals.util.PortalData;
+import mrriegel.portals.util.PortalWorldData;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class BlockController extends CommonBlockContainer {
+public class BlockController extends CommonBlockContainer<TileController> {
 
 	public BlockController() {
 		super(Material.ROCK, "controller");
@@ -20,17 +19,12 @@ public class BlockController extends CommonBlockContainer {
 	}
 
 	@Override
-	public TileEntity createNewTileEntity(World worldIn, int meta) {
-		return new TileController();
-	}
-
-	@Override
-	protected Class<? extends TileEntity> getTile() {
+	protected Class<? extends TileController> getTile() {
 		return TileController.class;
 	}
 
 	@Override
-	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn) {
+	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos) {
 		if (worldIn.getTileEntity(pos) instanceof TileController) {
 			TileController tile = (TileController) worldIn.getTileEntity(pos);
 			tile.validatePortal();
@@ -53,14 +47,10 @@ public class BlockController extends CommonBlockContainer {
 		super.breakBlock(worldIn, pos, state);
 		// if (!worldIn.isRemote)
 		{
-			PortalData data = PortalData.get(worldIn);
-			data.remove(new GlobalBlockPos(pos, worldIn));
-			for (GlobalBlockPos p : data.valids) {
-				TileController t = (TileController) p.getTile(worldIn);
-				if (t != null && t.getTarget() != null && t.getTarget().equals(new GlobalBlockPos(pos, worldIn))) {
-					t.setTarget(null);
-				}
-			}
+			PortalWorldData data = PortalWorldData.getData(worldIn);
+			data.remove(pos);
+			data.validControllers.stream().map(p -> (TileController) worldIn.getTileEntity(p)).//
+					filter(t -> t != null && new GlobalBlockPos(pos, worldIn).equals(t.getTarget())).forEach(t -> t.setTarget(null));
 		}
 	}
 

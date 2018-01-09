@@ -26,7 +26,7 @@ public class GuiUpgradeParticle extends GuiUpgrade {
 	@Override
 	public void drawScreen(int mouseX, int mouseY, float partialTicks) {
 		super.drawScreen(mouseX, mouseY, partialTicks);
-		fontRendererObj.drawString("Color:", guiLeft + 15, guiTop + 20, Color.HSBtoRGB((float) color.getValue(), .9f, 1));
+		fontRenderer.drawString("Color:", guiLeft + 15, guiTop + 20, Color.HSBtoRGB((float) color.getValue(), .9f, 1));
 	}
 
 	@Override
@@ -34,9 +34,9 @@ public class GuiUpgradeParticle extends GuiUpgrade {
 		super.onClosed();
 		NBTTagCompound nbt = getTag();
 		nbt.setInteger("color", Color.HSBtoRGB((float) color.getValue(), .7f, 1));
-		tile.setColorPortal(Color.HSBtoRGB((float) color.getValue(), .7f, 1));
-		NBTHelper.setInt(nbt, "kind", TileController.UPGRADE);
+		NBTHelper.set(nbt, "kind", TileController.UPGRADE);
 		tile.sendMessage(nbt);
+		tile.handleMessage(mc.player, nbt);
 	}
 
 }

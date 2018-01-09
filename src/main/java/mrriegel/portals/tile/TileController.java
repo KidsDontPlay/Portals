@@ -1,19 +1,33 @@
 package mrriegel.portals.tile;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.text.WordUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
+import cofh.redstoneflux.api.IEnergyReceiver;
+import cofh.redstoneflux.impl.EnergyStorage;
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.limelib.helper.TeleportationHelper;
 import mrriegel.limelib.tile.CommonTile;
+import mrriegel.limelib.tile.IHUDProvider;
 import mrriegel.limelib.util.GlobalBlockPos;
-import mrriegel.limelib.util.Utils;
+import mrriegel.limelib.util.LimeCapabilities;
 import mrriegel.portals.Portals;
 import mrriegel.portals.blocks.BlockPortaal;
 import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
-import mrriegel.portals.util.PortalData;
+import mrriegel.portals.util.PortalWorldData;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -22,55 +36,67 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.chunk.Chunk;
-
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.tuple.MutablePair;
-
-import cofh.api.energy.EnergyStorage;
-import cofh.api.energy.IEnergyReceiver;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import net.minecraftforge.common.capabilities.Capability;
 
 public class TileController extends CommonTile implements IPortalFrame, IEnergyReceiver {
 
 	public static final int untilPort = 9;
 	public static final int BUTTON = 0, NAME = 1, UPGRADE = 2;
-	private static int max = 300;
+	private static final int MAXFRAMES = 300;
 
 	private Set<BlockPos> frames = Sets.newHashSet(), portals = Sets.newHashSet();
-	private ItemStack[] stacks = new ItemStack[8];
+	private List<ItemStack> stacks = NonNullList.<ItemStack> withSize(4, ItemStack.EMPTY);
 	private boolean privat, active, valid;
-	private String owner, name = RandomStringUtils.random(10, true, true), targetName;
+	private String owner, name = WordUtils.capitalize(RandomStringUtils.random(10, true, !true).toLowerCase()), targetName;
 	private GlobalBlockPos target;
 	private BlockPos selfLanding;
 	private int colorPortal = 0x9500fe, colorParticle = 0x9500fe, colorFrame = 0x9500fe;
 	private EnumFacing looking = EnumFacing.NORTH;
+	private Axis axis = null;
 
 	public EnergyStorage en = new EnergyStorage(64000, 1000, 0);
 
 	public boolean validatePortal() {
 		Set<EnumFacing> faces = Sets.newHashSet();
 		Set<BlockPos> set = getPortalBlocks(faces);
-		if (frameChanged(set)) {
+		if (portals == null || !portals.equals(set)) {
 			valid = !set.isEmpty();
 			if (!valid && active)
 				deactivate();
-			portals = Sets.newHashSet(set);
+			portals = set;
 			// System.out.println("fac: "+faces.size());
 			if (!faces.isEmpty())
 				addFrames(faces);
+			Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
+			for (BlockPos p : frames) {
+				x.add(p.getX());
+				y.add(p.getY());
+				z.add(p.getZ());
+			}
+			if (x.size() == 1)
+				axis = Axis.Z;
+			else if (y.size() == 1)
+				axis = Axis.Y;
+			else if (z.size() == 1)
+				axis = Axis.X;
+			Validate.notNull(axis, "What??");
 		}
 		if (valid) {
-			PortalData.get(worldObj).add(new GlobalBlockPos(pos, worldObj));
+			PortalWorldData.getData(world).add(pos);
 			calculateLanding();
 		} else {
-			PortalData.get(worldObj).remove(new GlobalBlockPos(pos, worldObj));
+			PortalWorldData.getData(world).remove(pos);
 			selfLanding = null;
 		}
 		sync();
@@ -83,37 +109,24 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		}
 		if (target == null)
 			return false;
-		Axis a = null;
-		Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
-		for (BlockPos p : frames) {
-			x.add(p.getX());
-			y.add(p.getY());
-			z.add(p.getZ());
-		}
-		if (x.size() == 1)
-			a = Axis.Z;
-		else if (y.size() == 1)
-			a = Axis.Y;
-		else if (z.size() == 1)
-			a = Axis.X;
 		for (BlockPos p : portals) {
-			worldObj.setBlockState(p, ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, a));
-			((TilePortaal) worldObj.getTileEntity(p)).setController(this.pos);
-			((TilePortaal) worldObj.getTileEntity(p)).markDirty();
+			world.setBlockState(p, ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, axis));
+			((TilePortaal) world.getTileEntity(p)).setController(this.pos);
+			((TilePortaal) world.getTileEntity(p)).markDirty();
 		}
 		active = true;
 		sync();
 		for (BlockPos p : frames)
-			if (worldObj.getTileEntity(p) instanceof TileFrame)
-				((TileFrame) worldObj.getTileEntity(p)).sync();
+			if (world.getTileEntity(p) instanceof TileFrame)
+				((TileFrame) world.getTileEntity(p)).sync();
 		return true;
 
 	}
 
 	public void deactivate() {
 		for (BlockPos p : portals)
-			if (worldObj.getBlockState(p).getBlock() == ModBlocks.portaal) {
-				worldObj.setBlockToAir(p);
+			if (world.getBlockState(p).getBlock() == ModBlocks.portaal) {
+				world.setBlockToAir(p);
 			}
 		// for (BlockPos p : frames)
 		// if (worldObj.getTileEntity(p) instanceof TileFrame) {
@@ -123,59 +136,53 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		active = false;
 		sync();
 		for (BlockPos p : frames)
-			if (worldObj.getTileEntity(p) instanceof TileFrame)
-				((TileFrame) worldObj.getTileEntity(p)).sync();
+			if (world.getTileEntity(p) instanceof TileFrame)
+				((TileFrame) world.getTileEntity(p)).sync();
 
 	}
 
 	private void calculateLanding() {
-		Set<BlockPos> selfs = Sets.newHashSet();
+		List<BlockPos> selfs = new ArrayList<>();
 		for (BlockPos p : portals) {
-			IBlockState a = worldObj.getBlockState(p);
-			IBlockState aPlus = worldObj.getBlockState(p.up());
-			IBlockState aMinus = worldObj.getBlockState(p.down());
-			if (a.getBlock().getCollisionBoundingBox(a, worldObj, p) == null && aPlus.getBlock().getCollisionBoundingBox(aPlus, worldObj, p.up()) == null && !portals.contains(p.down())) {
+			IBlockState a = world.getBlockState(p);
+			IBlockState aPlus = world.getBlockState(p.up());
+			if (a.getCollisionBoundingBox(world, p) == null && aPlus.getCollisionBoundingBox(world, p.up()) == null && !portals.contains(p.down())) {
 				selfs.add(p);
 			}
 		}
 		if (selfs.isEmpty())
 			selfLanding = null;
 		else {
-			selfLanding = selfs.iterator().next();
+			if (axis == Axis.X || axis == Axis.Z) {
+				selfs.sort((a, b) -> {
+					int x = Integer.compare(a.getY(), b.getY());
+					return x;
+				});
+				Integer low = null;
+				Iterator<BlockPos> it = selfs.iterator();
+				while (it.hasNext()) {
+					BlockPos p = it.next();
+					if (low == null)
+						low = p.getY();
+					else {
+						if (p.getY() > low)
+							it.remove();
+					}
+				}
+			}
+			System.out.println(axis);
+			selfs.sort((a, b) -> {
+				int x = Integer.compare(a.getX() + a.getZ(), b.getX() + b.getZ());
+				return x;
+			});
+
+			selfLanding = selfs.get(MathHelper.clamp(selfs.size() / 2, 0, selfs.size() - 1));
 		}
-	}
-
-	boolean frameChanged(Set<BlockPos> set) {
-		if (portals == null)
-			return true;
-		return !(portals.containsAll(set) && set.containsAll(portals));
-	}
-
-	public boolean isPortalActive(GlobalBlockPos pos) {
-		if (pos == null)
-			return false;
-		boolean valid = PortalData.get(pos.getWorld(worldObj)).validPos(pos.getWorld(worldObj), pos.getPos());
-		if (!valid)
-			return false;
-		if (pos.getTile(worldObj) instanceof TileController && ((TileController) pos.getTile(worldObj)).isActive() // &&
-		// ((TileController)
-		// pos.getTile()).getTarget().equals(new
-		// GlobalBlockPos(this.pos,
-		// worldObj))
-		)
-			return true;
-		// for (EnumFacing face : EnumFacing.VALUES) {
-		// if
-		// (pos.getWorld(worldObj).getBlockState(pos.getPos().offset(face)).getBlock()
-		// == ModBlocks.portaal)
-		// return true;
-		// }
-		return false;
 	}
 
 	public Set<BlockPos> getPortalBlocks(Set<EnumFacing> faces) {
 		Set<BlockPos> ps = Sets.newHashSet();
-		Set<MutablePair<Set<BlockPos>, MutablePair<EnumFacing, Integer>>> sets = Sets.newHashSet();
+		Set<Pair<Set<BlockPos>, Pair<EnumFacing, Integer>>> sets = Sets.newHashSet();
 		for (EnumFacing f : EnumFacing.VALUES) {
 			for (int i = 0; i < 2; i++) {
 				Set<BlockPos> portals = Sets.newHashSet();
@@ -184,18 +191,18 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				portals.add(pos.offset(f));
 				try {
 					addPortals(pos.offset(f), portals, valids(f, i));
-					if (portals.size() <= max && validNeighbors(portals, valids(f, i)))
-						sets.add(MutablePair.of(portals, MutablePair.of(f, i)));
+					if (portals.size() <= MAXFRAMES && validNeighbors(portals, valids(f, i)))
+						sets.add(Pair.of(portals, Pair.of(f, i)));
 				} catch (PortalException e) {
 					// Portals.logger.error(e.getLocalizedMessage());
 				}
 			}
 		}
 
-		MutablePair<Set<BlockPos>, MutablePair<EnumFacing, Integer>> fin = null;
-		for (MutablePair<Set<BlockPos>, MutablePair<EnumFacing, Integer>> pa : sets) {
+		Pair<Set<BlockPos>, Pair<EnumFacing, Integer>> fin = null;
+		for (Pair<Set<BlockPos>, Pair<EnumFacing, Integer>> pa : sets) {
 			if (fin == null || pa.getLeft().size() > fin.getLeft().size())
-				fin = MutablePair.of(pa.getLeft(), pa.getRight());
+				fin = Pair.of(pa.getLeft(), pa.getRight());
 		}
 		ps = fin != null && fin.getLeft() != null ? Sets.newHashSet(fin.getLeft()) : Sets.<BlockPos> newHashSet();
 		if (fin != null && fin.getRight() != null)
@@ -208,21 +215,21 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		for (BlockPos p : portals) {
 			for (EnumFacing face : faces) {
 				BlockPos pp = p.offset(face);
-				if (worldObj.getTileEntity(pp) instanceof TileFrame) {
+				if (world.getTileEntity(pp) instanceof TileFrame) {
 					frames.add(pp);
-					((TileFrame) worldObj.getTileEntity(pp)).setController(this.pos);
-					((TileFrame) worldObj.getTileEntity(pp)).sync();
+					((TileFrame) world.getTileEntity(pp)).setController(this.pos);
+					((TileFrame) world.getTileEntity(pp)).sync();
 				}
 			}
 		}
 	}
 
 	private void addPortals(BlockPos pos, Set<BlockPos> portals, Set<EnumFacing> faces) {
-		if (portals.size() > max)
+		if (portals.size() > MAXFRAMES)
 			return;
 		for (EnumFacing face : faces) {
 			BlockPos bl = pos.offset(face);
-			Chunk chunk = worldObj.getChunkFromBlockCoords(bl);
+			Chunk chunk = world.getChunkFromBlockCoords(bl);
 			if (chunk == null || !chunk.isLoaded()) {
 				throw new PortalException("Chunk not loaded.");
 			}
@@ -241,11 +248,11 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	private boolean validPortalPos(BlockPos p) {
-		return worldObj.isAirBlock(p) || worldObj.getBlockState(p).getBlock() == ModBlocks.portaal;
+		return world.isAirBlock(p) || world.getBlockState(p).getBlock() == ModBlocks.portaal;
 	}
 
 	private boolean validFrame(BlockPos p) {
-		return worldObj.getBlockState(p).getBlock() == ModBlocks.frame || p.equals(this.pos);
+		return world.getBlockState(p).getBlock() == ModBlocks.frame || p.equals(this.pos);
 	}
 
 	private boolean validNeighbor(BlockPos p) {
@@ -341,19 +348,15 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	public void teleport(Entity entity) {
-		if (entity == null || !valid || !active || !isPortalActive(target) || entity.worldObj.isRemote)
+		if (entity == null || !valid || !active || !isPortalActive(target) || entity.world.isRemote)
 			return;
-		TileController tar = (TileController) target.getTile(worldObj);
+		TileController tar = (TileController) target.getTile();
 		if (tar == null || tar.selfLanding == null)
 			return;
-		int oldDim = entity.worldObj.provider.getDimension();
-//		if (oldDim == target.getDimension()) {
-//			System.out.println("try");
-//			TeleportationHelper.teleportToPosAndUpdate(entity, tar.getSelfLanding());
-//		} else {
-			entity.getEntityData().setBoolean("ported", true);
-			TeleportationHelper.serverTeleport(entity,tar.getSelfLanding(), target.getDimension());
-//		}
+		entity.getEntityData().setBoolean("ported", true);
+		Vec3d motion = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
+		System.out.println(entity.motionX + " " + entity.motionY + " " + entity.motionZ + " ");
+		TeleportationHelper.teleport(entity, tar.getSelfLanding(), target.getDimension());
 		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 			if (entity instanceof EntityPlayerMP) {
 				EntityPlayerMP player = (EntityPlayerMP) entity;
@@ -361,33 +364,15 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
 			}
 		}
-//		boolean player = false;
-//		for (Entity e : tar.worldObj.loadedEntityList)
-//			if (e instanceof EntityPlayer) {
-//				player = true;
-//				break;
-//			}
-//		System.out.println("is player: " + player);
-//		tar.worldObj.loadedEntityList.add(entity);
-		
-		// TeleportationHelper.teleportToPos(entity, tar.getSelfLanding());
 
-		// if (tar.getUpgrades().contains(Upgrade.MOTION)) {
-		// entity.motionX = before.xCoord;
-		// entity.motionY = before.yCoord;
-		// entity.motionZ = before.zCoord;
-		// } else {
-		// entity.motionX = 0;
-		// entity.motionY = 0;
-		// entity.motionZ = 0;
-		// }
-		// if (entity instanceof EntityPlayerMP)
-		// ((EntityPlayerMP) entity).connection.netManager.sendPacket(new
-		// SPacketEntityVelocity(entity));
-		// if (entity instanceof EntityPlayerMP)
-		// ((EntityPlayerMP) entity).connection.netManager.sendPacket(new
-		// SPacketEntityTeleport(entity));
-
+		if (tar.getUpgrades().contains(Upgrade.MOTION))
+			if (entity instanceof EntityPlayerMP)
+				((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity.getEntityId(), motion.x, motion.y, motion.z));
+			else {
+				entity.motionX = motion.x;
+				entity.motionY = motion.y;
+				entity.motionZ = motion.z;
+			}
 	}
 
 	@Override
@@ -397,102 +382,130 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 	@Override
 	public boolean openGUI(EntityPlayerMP player) {
-		player.openGui(Portals.instance, GuiHandler.PORTAL, worldObj, pos.getX(), pos.getY(), pos.getZ());
+		if ("!".isEmpty()) {
+			validatePortal();
+			if (selfLanding != null)
+				TeleportationHelper.teleport(player, selfLanding);
+			return false;
+		}
+		if (!valid) {
+			player.sendStatusMessage(new TextComponentString(TextFormatting.RED + "Invalid Structure"), true);
+			return true;
+		}
+		player.openGui(Portals.instance, GuiHandler.PORTAL, world, pos.getX(), pos.getY(), pos.getZ());
 		return true;
 	}
 
 	@Override
-	public void handleMessage(EntityPlayerMP player, NBTTagCompound nbt) {
-		switch (NBTHelper.getInt(nbt, "kind")) {
+	public boolean hasCapability(Capability<?> capability, EnumFacing facing) {
+		return capability == LimeCapabilities.hudproviderCapa || super.hasCapability(capability, facing);
+	}
+
+	@Override
+	public <T> T getCapability(Capability<T> capability, EnumFacing facing) {
+		if (capability == LimeCapabilities.hudproviderCapa) {
+			return (T) new IHUDProvider() {
+
+				@Override
+				public List<String> getData(boolean sneak, EnumFacing facing) {
+					List<String> lis = new ArrayList<>();
+					lis.add(TextFormatting.YELLOW + name);
+					lis.add((valid ? TextFormatting.GREEN + "Valid " : TextFormatting.RED + "Invalid ") + "Structure");
+					lis.add(active ? TextFormatting.GREEN + "On" : TextFormatting.RED + "Off");
+					if (targetName != null)
+						lis.add("Target: " + targetName);
+
+					return lis;
+				}
+			};
+		}
+		return super.getCapability(capability, facing);
+	}
+
+	@Override
+	public void handleMessage(EntityPlayer player, NBTTagCompound nbt) {
+		switch (NBTHelper.get(nbt, "kind", int.class)) {
 		case BUTTON:
-			TileController target = PortalData.get(worldObj).getTile(NBTHelper.getString(nbt, "target"));
+			TileController target = PortalWorldData.getData(world).getTile(NBTHelper.get(nbt, "target", String.class));
 			if (target != null)
-				setTarget(new GlobalBlockPos(target.getPos(), target.getWorld()));
+				setTarget(GlobalBlockPos.fromTile(target));
 			break;
 		case NAME:
-			PortalData data = PortalData.get(worldObj);
-			String neu = NBTHelper.getString(nbt, "name");
+			PortalWorldData data = PortalWorldData.getData(world);
+			String neu = NBTHelper.get(nbt, "name", String.class);
 			if (neu.isEmpty())
 				neu = RandomStringUtils.random(10, true, true);
 			int i = 1;
-			while (data.nameOccupied(neu, new GlobalBlockPos(pos, worldObj))) {
+			while (data.nameOccupied(neu, pos)) {
 				neu = "Occupied" + i;
 				i++;
 			}
 			setName(neu);
 			break;
 		case UPGRADE:
-			switch (Upgrade.values()[NBTHelper.getInt(nbt, "id")]) {
+			switch (Upgrade.values()[NBTHelper.get(nbt, "id", int.class)]) {
 			case COLOR:
-				setColorPortal(NBTHelper.getInt(nbt, "colorP"));
-				setColorFrame(NBTHelper.getInt(nbt, "colorF"));
+				setColorPortal(NBTHelper.get(nbt, "colorP", int.class));
+				setColorFrame(NBTHelper.get(nbt, "colorF", int.class));
 				break;
 			case DIRECTION:
 				setLooking(getLooking().rotateAround(Axis.Y));
 				break;
 			case PARTICLE:
-				setColorParticle(NBTHelper.getInt(nbt, "color"));
+				setColorParticle(NBTHelper.get(nbt, "color", int.class));
 				break;
 			}
 			break;
 		default:
 			break;
 		}
-		sync();
+		markForSync();
 	}
 
 	@Override
-	public void readFromNBT(NBTTagCompound compound) {
-		super.readFromNBT(compound);
-		en.readFromNBT(compound);
-		frames = Sets.newHashSet(Utils.getBlockPosList(NBTHelper.getLongList(compound, "frames")));
-		portals = Sets.newHashSet(Utils.getBlockPosList(NBTHelper.getLongList(compound, "portals")));
-		active = compound.getBoolean("active");
-		privat = compound.getBoolean("privat");
-		valid = compound.getBoolean("valid");
-		owner = NBTHelper.getString(compound, "owner");
-		name = NBTHelper.getString(compound, "name");
-		targetName = NBTHelper.getString(compound, "targetName");
-		target = GlobalBlockPos.loadGlobalPosFromNBT(compound);
-		if (compound.hasKey("selfLanding"))
-			selfLanding = BlockPos.fromLong(compound.getLong("selfLanding"));
-		else
-			selfLanding = null;
-		if (compound.hasKey("looking"))
-			looking = EnumFacing.byName(compound.getString("looking"));
-		else
-			looking = null;
-		this.stacks = new ItemStack[stacks.length];
-		for (int i = 0; i < stacks.length; i++)
-			stacks[i] = NBTHelper.getItemStackList(compound, "Items").get(i);
-		colorParticle = compound.getInteger("colorParticle");
-		colorPortal = compound.getInteger("colorPortal");
-		colorFrame = compound.getInteger("colorFrame");
+	public void readFromNBT(NBTTagCompound nbt) {
+		super.readFromNBT(nbt);
+		en.readFromNBT(nbt);
+		frames = new HashSet<>(NBTHelper.getList(nbt, "frames", BlockPos.class));
+		portals = new HashSet<>(NBTHelper.getList(nbt, "portals", BlockPos.class));
+		stacks = NBTHelper.getList(nbt, "stacks", ItemStack.class);
+		privat = NBTHelper.get(nbt, "privat", boolean.class);
+		active = NBTHelper.get(nbt, "active", boolean.class);
+		valid = NBTHelper.get(nbt, "valid", boolean.class);
+		owner = NBTHelper.get(nbt, "owner", String.class);
+		name = NBTHelper.get(nbt, "name", String.class);
+		targetName = NBTHelper.get(nbt, "targetName", String.class);
+		target = GlobalBlockPos.loadGlobalPosFromNBT(NBTHelper.getSafe(nbt, "target", NBTTagCompound.class).orElse(new NBTTagCompound()));
+		selfLanding = NBTHelper.get(nbt, "self", BlockPos.class);
+		colorPortal = NBTHelper.get(nbt, "colorPortal", int.class);
+		colorParticle = NBTHelper.get(nbt, "colorParticle", int.class);
+		colorFrame = NBTHelper.get(nbt, "colorFrame", int.class);
+		looking = NBTHelper.get(nbt, "looking", EnumFacing.class);
+		axis = NBTHelper.get(nbt, "axis", Axis.class);
+
 	}
 
 	@Override
-	public NBTTagCompound writeToNBT(NBTTagCompound compound) {
-		en.writeToNBT(compound);
-		NBTHelper.setLongList(compound, "frames", Utils.getLongList(Lists.newArrayList(frames)));
-		NBTHelper.setLongList(compound, "frames", Utils.getLongList(Lists.newArrayList(frames)));
-		compound.setBoolean("active", active);
-		compound.setBoolean("privat", privat);
-		compound.setBoolean("valid", valid);
-		NBTHelper.setString(compound, "owner", owner);
-		NBTHelper.setString(compound, "name", name);
-		NBTHelper.setString(compound, "targetName", targetName);
-		if (target != null)
-			target.writeToNBT(compound);
-		if (selfLanding != null)
-			compound.setLong("selfLanding", selfLanding.toLong());
-		if (looking != null)
-			compound.setString("looking", looking.getName2());
-		NBTHelper.setItemStackList(compound, "Items", Lists.newArrayList(stacks));
-		compound.setInteger("colorParticle", colorParticle);
-		compound.setInteger("colorPortal", colorPortal);
-		compound.setInteger("colorFrame", colorFrame);
+	public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
+		en.writeToNBT(nbt);
+		NBTHelper.setList(nbt, "frames", new ArrayList<>(frames));
+		NBTHelper.setList(nbt, "portals", new ArrayList<>(portals));
+		NBTHelper.setList(nbt, "stacks", stacks);
+		NBTHelper.set(nbt, "privat", privat);
+		NBTHelper.set(nbt, "active", active);
+		NBTHelper.set(nbt, "valid", valid);
+		NBTHelper.set(nbt, "owner", owner);
+		NBTHelper.set(nbt, "name", name);
+		NBTHelper.set(nbt, "targetName", targetName);
+		NBTHelper.set(nbt, "target", target == null ? null : target.writeToNBT(new NBTTagCompound()));
+		NBTHelper.set(nbt, "self", selfLanding);
+		NBTHelper.set(nbt, "colorPortal", colorPortal);
+		NBTHelper.set(nbt, "colorParticle", colorParticle);
+		NBTHelper.set(nbt, "colorFrame", colorFrame);
+		NBTHelper.set(nbt, "looking", looking);
+		NBTHelper.set(nbt, "axis", axis);
 
-		return super.writeToNBT(compound);
+		return super.writeToNBT(nbt);
 	}
 
 	public Set<BlockPos> getFrames() {
@@ -558,8 +571,9 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	public void setTarget(GlobalBlockPos target) {
 		this.target = target;
 		if (target != null)
-			setTargetName(((TileController) getTarget().getTile(getWorld())).getName());
+			setTargetName(((TileController) getTarget().getTile()).getName());
 		else {
+			setTargetName(null);
 			if (active)
 				deactivate();
 		}
@@ -573,12 +587,8 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		this.selfLanding = selfLanding;
 	}
 
-	public ItemStack[] getStacks() {
+	public List<ItemStack> getStacks() {
 		return stacks;
-	}
-
-	public void setStacks(ItemStack[] stacks) {
-		this.stacks = stacks;
 	}
 
 	public int getColorPortal() {
@@ -621,12 +631,6 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		this.targetName = targetName;
 	}
 
-	private static class PortalException extends RuntimeException {
-		public PortalException(String msg) {
-			super(msg);
-		}
-	}
-
 	@Override
 	public TileController getTileController() {
 		return this;
@@ -654,5 +658,33 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	@Override
 	public int receiveEnergy(EnumFacing from, int maxReceive, boolean simulate) {
 		return en.receiveEnergy(maxReceive, simulate);
+	}
+
+	private static class PortalException extends RuntimeException {
+		public PortalException(String msg) {
+			super(msg);
+		}
+	}
+
+	public static boolean isPortalActive(GlobalBlockPos pos) {
+		if (pos == null)
+			return false;
+		boolean valid = PortalWorldData.getData(pos.getWorld()).validPos(pos.getPos());
+		if (!valid)
+			return false;
+		if (pos.getTile() instanceof TileController && ((TileController) pos.getTile()).isActive() // &&
+		// ((TileController)
+		// pos.getTile()).getTarget().equals(new
+		// GlobalBlockPos(this.pos,
+		// worldObj))
+		)
+			return true;
+		// for (EnumFacing face : EnumFacing.VALUES) {
+		// if
+		// (pos.getWorld(worldObj).getBlockState(pos.getPos().offset(face)).getBlock()
+		// == ModBlocks.portaal)
+		// return true;
+		// }
+		return false;
 	}
 }

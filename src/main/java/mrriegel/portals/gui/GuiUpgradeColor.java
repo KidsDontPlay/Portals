@@ -2,6 +2,8 @@ package mrriegel.portals.gui;
 
 import java.awt.Color;
 
+import com.google.common.base.Strings;
+
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
@@ -29,8 +31,8 @@ public class GuiUpgradeColor extends GuiUpgrade {
 	@Override
 	public void drawScreen(int mouseX, int mouseY, float partialTicks) {
 		super.drawScreen(mouseX, mouseY, partialTicks);
-		fontRendererObj.drawString("Portal:", guiLeft + 15, guiTop + 20, Color.HSBtoRGB((float) portal.getValue(), .9f, 1));
-		fontRendererObj.drawString("Frame:", guiLeft + 15, guiTop + 54, Color.HSBtoRGB((float) frame.getValue(), .9f, 1));
+		fontRenderer.drawString("Portal: " + Strings.repeat("\u25A0", 6), guiLeft + 15, guiTop + 20, Color.HSBtoRGB((float) portal.getValue(), .9f, 1f));
+		fontRenderer.drawString("Frame: " + Strings.repeat("\u25A0", 6), guiLeft + 15, guiTop + 54, Color.HSBtoRGB((float) frame.getValue(), .9f, 1f));
 		// drawRect(guiLeft + 12, guiTop + 18, guiLeft + 12+15, guiTop + 18+15,
 		// slider.getValueInt());
 	}
@@ -39,14 +41,15 @@ public class GuiUpgradeColor extends GuiUpgrade {
 	protected void onClosed() {
 		super.onClosed();
 		NBTTagCompound nbt = getTag();
-		NBTHelper.setInt(nbt, "colorP", Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
-		NBTHelper.setInt(nbt, "colorF", Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
-		tile.setColorPortal(Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
-		tile.setColorFrame(Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
-		for (BlockPos pos : tile.getPortals())
-			tile.getWorld().markBlockRangeForRenderUpdate(pos, pos);
-		NBTHelper.setInt(nbt, "kind", TileController.UPGRADE);
+		NBTHelper.set(nbt, "colorP", Color.HSBtoRGB((float) portal.getValue(), .7f, 1));
+		NBTHelper.set(nbt, "colorF", Color.HSBtoRGB((float) frame.getValue(), .7f, 1));
+		NBTHelper.set(nbt, "kind", TileController.UPGRADE);
+		tile.handleMessage(mc.player, nbt);
 		tile.sendMessage(nbt);
+		for (BlockPos p : tile.getFrames())
+			mc.world.markBlockRangeForRenderUpdate(p.add(-1, -1, -1), p.add(1, 1, 1));
+		for (BlockPos p : tile.getPortals())
+			mc.world.markBlockRangeForRenderUpdate(p.add(-1, -1, -1), p.add(1, 1, 1));
 	}
 
 }

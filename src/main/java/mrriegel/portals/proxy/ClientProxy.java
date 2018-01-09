@@ -8,27 +8,12 @@ import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TilePortaal;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BlockRendererDispatcher;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.VertexBuffer;
-import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.color.IBlockColor;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.init.Blocks;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
-import net.minecraft.world.World;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-
-import org.lwjgl.opengl.GL11;
 
 public class ClientProxy extends CommonProxy {
 
@@ -42,69 +27,28 @@ public class ClientProxy extends CommonProxy {
 	@Override
 	public void init(FMLInitializationEvent event) {
 		super.init(event);
-		// MinecraftForge.EVENT_BUS.register(this);
-	}
-
-	@Override
-	public void postInit(FMLPostInitializationEvent event) {
-		super.postInit(event);
-		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(new IBlockColor() {
-			@Override
-			public int colorMultiplier(IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) {
-				if (worldIn == null || pos == null || ((TilePortaal) worldIn.getTileEntity(pos)).getController() == null || worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) == null || !((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getUpgrades().contains(Upgrade.COLOR))
-					return 0xffffff;
-				return ((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getColorPortal();
-			}
+		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler((IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) -> {
+			if (worldIn == null || pos == null || ((TilePortaal) worldIn.getTileEntity(pos)).getController() == null || worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) == null || !((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getUpgrades().contains(Upgrade.COLOR))
+				return 0xffffff;
+			if (!((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).isValid())
+				return 0xffffff;
+			return ((TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController())).getColorPortal();
 		}, ModBlocks.portaal);
-		IBlockColor frame = new IBlockColor() {
-			@Override
-			public int colorMultiplier(IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) {
-				if (worldIn == null || pos == null || !(worldIn.getTileEntity(pos) instanceof IPortalFrame) || ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController() == null || !((IPortalFrame) worldIn.getTileEntity(pos)).getTileController().getUpgrades().contains(Upgrade.COLOR)) {
-					return 0xffffff;
-				}
-				return ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController().getColorFrame();
+		IBlockColor frame = (IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) -> {
+			if (worldIn == null || pos == null || !(worldIn.getTileEntity(pos) instanceof IPortalFrame) || ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController() == null || !((IPortalFrame) worldIn.getTileEntity(pos)).getTileController().getUpgrades().contains(Upgrade.COLOR)) {
+				return 0xffffff;
 			}
+			if (!((IPortalFrame) worldIn.getTileEntity(pos)).getTileController().isValid())
+				return 0xffffff;
+			return ((IPortalFrame) worldIn.getTileEntity(pos)).getTileController().getColorFrame();
 		};
 		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(frame, ModBlocks.controller);
 		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler(frame, ModBlocks.frame);
 	}
 
-	// @SubscribeEvent
-	public void render(RenderWorldLastEvent event) {
-		for (TileEntity tile : Minecraft.getMinecraft().theWorld.loadedTileEntityList) {
-			if (tile instanceof IPortalFrame) {
-				Minecraft.getMinecraft().renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-				BlockRendererDispatcher blockrendererdispatcher = Minecraft.getMinecraft().getBlockRendererDispatcher();
-				World world = Minecraft.getMinecraft().theWorld;
-				BlockPos blockpos = tile.getPos();
-				IBlockState iblockstate = Blocks.EMERALD_BLOCK.getDefaultState();
-				double xx = blockpos.getX() - TileEntityRendererDispatcher.staticPlayerX;
-				double yy = blockpos.getY() - TileEntityRendererDispatcher.staticPlayerY;
-				double zz = blockpos.getZ() - TileEntityRendererDispatcher.staticPlayerZ;
-
-				GlStateManager.pushMatrix();
-				RenderHelper.disableStandardItemLighting();
-				GlStateManager.translate((float) xx, (float) yy, (float) zz);
-
-				Tessellator tessellator = Tessellator.getInstance();
-				VertexBuffer worldrenderer = tessellator.getBuffer();
-				worldrenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-
-				int i = blockpos.getX();
-				int j = blockpos.getY();
-				int k = blockpos.getZ();
-
-				worldrenderer.setTranslation(((-i)), (-j), ((-k)));
-				worldrenderer.color(1F, 1F, 1F, 1F);
-				IBakedModel ibakedmodel = blockrendererdispatcher.getModelForState(iblockstate);
-				blockrendererdispatcher.getBlockModelRenderer().renderModel(world, ibakedmodel, iblockstate, blockpos, worldrenderer, true);
-
-				worldrenderer.setTranslation(0.0D, 0.0D, 0.0D);
-				tessellator.draw();
-				RenderHelper.enableStandardItemLighting();
-				GlStateManager.popMatrix();
-			}
-		}
+	@Override
+	public void postInit(FMLPostInitializationEvent event) {
+		super.postInit(event);
 	}
 
 }

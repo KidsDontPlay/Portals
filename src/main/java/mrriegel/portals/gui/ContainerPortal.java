@@ -2,7 +2,11 @@ package mrriegel.portals.gui;
 
 import java.util.List;
 
-import mrriegel.limelib.gui.CommonContainer;
+import org.apache.commons.lang3.tuple.Pair;
+
+import com.google.common.collect.Lists;
+
+import mrriegel.limelib.gui.CommonContainerTile;
 import mrriegel.portals.init.ModItems;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.entity.player.EntityPlayer;
@@ -11,56 +15,49 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.item.ItemStack;
 
-import com.google.common.collect.Lists;
+public class ContainerPortal extends CommonContainerTile<TileController> {
 
-public class ContainerPortal extends CommonContainer {
-
-	public TileController tile;
 	IInventory tmp;
 
 	public ContainerPortal(final TileController tile, InventoryPlayer invPlayer) {
-		super(invPlayer, InvEntry.of("tile", new InventoryBasic("null", false, tile.getStacks().length)));
-		this.tile = tile;
-		tmp = invs.get("tile");
-		for (int i = 0; i < tile.getStacks().length; i++) {
-			ItemStack k = tile.getStacks()[i];
+		super(invPlayer, tile, Pair.of("tile", new InventoryBasic("null", false, tile.getStacks().size()) {
+			@Override
+			public boolean isItemValidForSlot(int index, ItemStack stack) {
+				return stack.getItem() == ModItems.upgrade;
+			}
+		}));
+		this.save = tile;
+		tmp = (IInventory) invs.get("tile");
+		for (int i = 0; i < tile.getStacks().size(); i++) {
+			ItemStack k = tile.getStacks().get(i);
 			tmp.setInventorySlotContents(i, k);
 		}
+		this.save.sync();
 		if (!tile.getWorld().isRemote) {
-			if (tile.isActive() && !tile.isPortalActive(tile.getTarget()))
+			if (tile.isActive() && !TileController.isPortalActive(tile.getTarget()))
 				tile.deactivate();
 		}
 	}
 
 	@Override
-	public boolean canInteractWith(EntityPlayer playerIn) {
-		return tile.isUseableByPlayer(playerIn);
-	}
-
-	@Override
 	public void onContainerClosed(EntityPlayer playerIn) {
 		super.onContainerClosed(playerIn);
-		inventoryChanged();
-	}
-
-	@Override
-	protected void inventoryChanged() {
-		for (int i = 0; i < tile.getStacks().length; i++) {
-			tile.getStacks()[i] = tmp.getStackInSlot(i);
+		for (int i = 0; i < save.getStacks().size(); i++) {
+			save.getStacks().set(i, tmp.getStackInSlot(i));
 		}
-		tile.sync();
+		save.sync();
 	}
 
 	@Override
 	protected void initSlots() {
-		initPlayerSlots(8, 156);
-		initSlots(invs.get("tile"), 8, 8, 1, 8);
+		initPlayerSlots(8, 12 + 18 * 4);
+		initSlots(invs.get("tile"), 176, 12 + 18 * 4, 1, 4);
 	}
 
 	@Override
 	protected List<Area> allowedSlots(ItemStack stack, IInventory inv, int index) {
 		List<Area> lis = Lists.newArrayList();
-		lis.add(inv == invPlayer ? stack.getItem() == ModItems.upgrade ? getAreaforEntire(tmp) : null : getAreaforEntire(invPlayer));
+		lis.add(inv == invPlayer ? stack.getItem() == ModItems.upgrade ? getAreaForEntireInv(tmp) : null : getAreaForEntireInv(invPlayer));
 		return lis;
 	}
 

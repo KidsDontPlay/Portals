@@ -1,23 +1,20 @@
 package mrriegel.portals.items;
 
-import java.util.List;
+import org.apache.commons.lang3.text.WordUtils;
 
-import mrriegel.limelib.item.CommonItem;
+import mrriegel.limelib.item.CommonSubtypeItem;
 import mrriegel.portals.gui.GuiUpgrade;
 import mrriegel.portals.gui.GuiUpgradeColor;
 import mrriegel.portals.gui.GuiUpgradeDirection;
 import mrriegel.portals.gui.GuiUpgradeParticle;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-import org.apache.commons.lang3.text.WordUtils;
-
-public class ItemUpgrade extends CommonItem {
+public class ItemUpgrade extends CommonSubtypeItem {
 
 	public enum Upgrade {
-		COLOR(true), DIRECTION(true), PARTICLE(true);
+		COLOR(true), DIRECTION(true), PARTICLE(true), MOTION(false);
 
 		public boolean hasButton;
 
@@ -33,21 +30,17 @@ public class ItemUpgrade extends CommonItem {
 				return new GuiUpgradeDirection(tile, this);
 			case PARTICLE:
 				return new GuiUpgradeParticle(tile, this);
+			default:
+				break;
 			}
 			return null;
 		}
 	}
 
 	public ItemUpgrade() {
-		super("upgrade");
+		super("upgrade", Upgrade.values().length);
 		setCreativeTab(CreativeTabs.TRANSPORTATION);
 		setHasSubtypes(true);
-	}
-
-	@Override
-	public void getSubItems(Item itemIn, CreativeTabs tab, List<ItemStack> subItems) {
-		for (Upgrade u : Upgrade.values())
-			subItems.add(new ItemStack(itemIn, 1, u.ordinal()));
 	}
 
 	@Override

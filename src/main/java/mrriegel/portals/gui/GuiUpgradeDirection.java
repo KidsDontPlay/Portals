@@ -2,14 +2,14 @@ package mrriegel.portals.gui;
 
 import java.io.IOException;
 
+import org.apache.commons.lang3.text.WordUtils;
+
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing.Axis;
-
-import org.apache.commons.lang3.text.WordUtils;
 
 public class GuiUpgradeDirection extends GuiUpgrade {
 
@@ -28,7 +28,7 @@ public class GuiUpgradeDirection extends GuiUpgrade {
 		tile.setLooking(tile.getLooking().rotateAround(Axis.Y));
 		button.displayString = WordUtils.capitalize(tile.getLooking().getName2().toLowerCase());
 		NBTTagCompound nbt = getTag();
-		NBTHelper.setInt(nbt, "kind", TileController.UPGRADE);
+		NBTHelper.set(nbt, "kind", TileController.UPGRADE);
 		tile.sendMessage(nbt);
 	}
 

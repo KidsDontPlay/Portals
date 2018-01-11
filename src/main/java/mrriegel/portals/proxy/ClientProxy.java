@@ -1,10 +1,12 @@
 package mrriegel.portals.proxy;
 
+import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.init.ModItems;
+import mrriegel.portals.tile.TileBasicFrame;
 import mrriegel.portals.tile.TileController;
-import mrriegel.portals.tile.TileFrame;
 import mrriegel.portals.tile.TilePortaal;
+import mrriegel.portals.util.PortalWorldData;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.BlockPos;
@@ -28,13 +30,13 @@ public class ClientProxy extends CommonProxy {
 		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler((IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) -> {
 			if (worldIn == null || pos == null || !(worldIn.getTileEntity(pos) instanceof TilePortaal))
 				return 0xffffff;
-			return ((TilePortaal) worldIn.getTileEntity(pos)).getColor();
+			return PortalWorldData.INSTANCE.portalColors.getInt(GlobalBlockPos.fromTile(worldIn.getTileEntity(pos)));
 		}, ModBlocks.portaal);
 		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler((IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) -> {
-			if (worldIn == null || pos == null || !(worldIn.getTileEntity(pos) instanceof TileFrame))
+			if (worldIn == null || pos == null || !(worldIn.getTileEntity(pos) instanceof TileBasicFrame))
 				return 0xffffff;
-			return ((TileFrame) worldIn.getTileEntity(pos)).getColor();
-		}, ModBlocks.frame);
+			return PortalWorldData.INSTANCE.frameColors.getInt(GlobalBlockPos.fromTile(worldIn.getTileEntity(pos)));
+		}, ModBlocks.frame, ModBlocks.capa);
 		Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler((IBlockState state, IBlockAccess worldIn, BlockPos pos, int tintIndex) -> {
 			if (worldIn == null || pos == null || !(worldIn.getTileEntity(pos) instanceof TileController))
 				return 0xffffff;

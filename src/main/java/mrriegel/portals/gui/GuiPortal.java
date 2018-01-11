@@ -20,7 +20,7 @@ import mrriegel.limelib.gui.button.GuiButtonArrow;
 import mrriegel.limelib.helper.ColorHelper;
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.limelib.util.GlobalBlockPos;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
+import mrriegel.portals.items.Upgrade;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.util.PortalWorldData;
 import net.minecraft.client.Minecraft;
@@ -30,6 +30,7 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.text.TextFormatting;
 
 public class GuiPortal extends CommonGuiContainer {
 
@@ -38,7 +39,6 @@ public class GuiPortal extends CommonGuiContainer {
 	private int visibleButtons, currentPos, maxPos;
 	private List<GuiButton> targetButtons;
 	private List<String> targets;
-	//	private Map<String, String> targetMap;
 	private String currentTarget;
 	private GuiButton up, down;
 
@@ -65,7 +65,7 @@ public class GuiPortal extends CommonGuiContainer {
 		name.setTextColor(16777215);
 		name.setText(((ContainerPortal) inventorySlots).getTile().getName());
 		name.setFocused(true);
-		targets = new ArrayList<>(PortalWorldData.INSTANCE.getNames());
+		targets = new ArrayList<>(PortalWorldData.INSTANCE.names.values());
 		targets.remove(tile.getName());
 		targets.sort((s1, s2) -> s1.toLowerCase().compareTo(s2.toLowerCase()));
 		visibleButtons = Math.min(5, targets.size());
@@ -89,7 +89,7 @@ public class GuiPortal extends CommonGuiContainer {
 		if (maxPos == 0)
 			down.enabled = false;
 		buttonList.add(down);
-		buttonList.add(new CommonGuiButton(2002, 130 + guiLeft, 20 + guiTop, 60, 15, ""));
+		buttonList.add(new CommonGuiButton(2002, 130 + guiLeft, 20 + guiTop, 65, 15, ""));
 	}
 
 	@Override
@@ -103,8 +103,12 @@ public class GuiPortal extends CommonGuiContainer {
 		double percent = maxPos == 0. ? 0. : (currentPos + 0.) / (maxPos + 0.);
 		drawer.drawColoredRectangle(110, 30 + (int) (percent * 36), 14, 2, 0xFF050505);
 		name.drawTextBox();
+		drawer.drawFrame(199, 6, 9, 72, 1, 0xFF040404);
+		drawer.drawEnergyBarV(200, 7, 70, tile.getEnergyStored(null) / (float) tile.getMaxEnergyStored(null));
 		fontRenderer.drawString("Name:", 7 + guiLeft, 7 + guiTop, 0x040404, !true);
-		fontRenderer.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 130 + guiLeft, 50 + guiTop, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
+		fontRenderer.drawString("Target:", 131 + guiLeft, 40 + guiTop, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
+		fontRenderer.drawString(TextFormatting.UNDERLINE + (currentTarget != null ? currentTarget : ""), 131 + guiLeft, 52 + guiTop, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
+
 	}
 
 	@Override
@@ -116,9 +120,11 @@ public class GuiPortal extends CommonGuiContainer {
 				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
 			}
 		}
+		if (isPointInRegion(199, 6, 9, 72, mouseX, mouseY))
+			drawHoveringText(tile.getEnergyStored(null) + "/" + tile.getMaxEnergyStored(null) + " FE", mouseX - guiLeft, mouseY - guiTop);
 		for (GuiButton b : targetButtons) {
 			if (b.isMouseOver()) {
-				GlobalBlockPos gbp = GlobalBlockPos.fromTile(PortalWorldData.INSTANCE.getTile(b.displayString));
+				GlobalBlockPos gbp = PortalWorldData.INSTANCE.names.inverse().get(b.displayString);
 				if (gbp != null)
 					drawHoveringText(Lists.newArrayList(WordUtils.capitalizeFully("Dim:" + gbp.getDimension() + ", x:" + gbp.getPos().getX() + " y:" + gbp.getPos().getY() + " z:" + gbp.getPos().getZ())), mouseX - guiLeft, mouseY - guiTop);
 			}
@@ -142,6 +148,7 @@ public class GuiPortal extends CommonGuiContainer {
 		}
 		currentTarget = tile.getTargetName();
 		buttonList.stream().filter(b -> b.id == 2002).forEach(b -> b.displayString = tile.isActive() ? "Deactivate" : "Activate");
+		buttonList.stream().filter(b -> b.id == 2002).forEach(b -> b.enabled = tile.getTarget() != null);
 	}
 
 	@Override
@@ -155,7 +162,7 @@ public class GuiPortal extends CommonGuiContainer {
 	@Override
 	protected void actionPerformed(GuiButton button) throws IOException {
 		if (button.id < 4) {
-			GuiUpgrade gui = Upgrade.values()[((ContainerPortal) inventorySlots).tmp.getStackInSlot(button.id).getItemDamage()].getGUI(tile);
+			GuiUpgrade gui = (GuiUpgrade) Upgrade.values()[((ContainerPortal) inventorySlots).tmp.getStackInSlot(button.id).getItemDamage()].getGUI(tile);
 			if (gui != null)
 				GuiDrawer.openGui(gui);
 		} else if (button.id == 2000) {

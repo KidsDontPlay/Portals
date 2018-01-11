@@ -5,7 +5,7 @@ import java.util.Random;
 import mrriegel.limelib.block.CommonBlockContainer;
 import mrriegel.limelib.helper.RegistryHelper;
 import mrriegel.limelib.helper.TeleportationHelper;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
+import mrriegel.portals.items.Upgrade;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.tile.TilePortaal;
 import mrriegel.portals.util.PortalEffect;
@@ -40,7 +40,6 @@ public class BlockPortaal extends CommonBlockContainer<TilePortaal> {
 		super(Material.PORTAL, "portaal");
 		this.setDefaultState(this.blockState.getBaseState().withProperty(AXIS, EnumFacing.Axis.X));
 		setBlockUnbreakable();
-		// setResistance(600000F);
 	}
 
 	@Override
@@ -161,15 +160,19 @@ public class BlockPortaal extends CommonBlockContainer<TilePortaal> {
 				double d5 = (rand.nextFloat() - 0.5D) * 0.5D;
 				int j = rand.nextInt(2) * 2 - 1;
 
-				if (worldIn.getBlockState(pos.west()).getBlock() != this && worldIn.getBlockState(pos.east()).getBlock() != this) {
+				if (tile.getAxis() == Axis.Z) {
 					d0 = pos.getX() + 0.5D + 0.25D * j;
 					d3 = rand.nextFloat() * 2.0F * j;
-				} else {
+				} else if (tile.getAxis() == Axis.X) {
 					d2 = pos.getZ() + 0.5D + 0.25D * j;
 					d5 = rand.nextFloat() * 2.0F * j;
+				} else {
+					d1 = pos.getZ() + 0.5D + 0.25D * j;
+					d4 = rand.nextFloat() * 2.0F * j;
 				}
 				Minecraft.getMinecraft().effectRenderer.addEffect(new PortalEffect(worldIn, d0, d1, d2, d3, d4, d5, tile.getColorParticle()));
 			}
+
 	}
 
 	@Override
@@ -189,8 +192,7 @@ public class BlockPortaal extends CommonBlockContainer<TilePortaal> {
 				}
 			}
 		}
-		if (entityIn != null)
-			entityIn.getEntityData().setInteger("untilPort", TileController.untilPort);
+		entityIn.getEntityData().setInteger("untilPort", TileController.untilPort);
 	}
 
 	@Override

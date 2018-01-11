@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.apache.commons.lang3.text.WordUtils;
 
 import mrriegel.limelib.helper.NBTHelper;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
+import mrriegel.portals.items.Upgrade;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.nbt.NBTTagCompound;

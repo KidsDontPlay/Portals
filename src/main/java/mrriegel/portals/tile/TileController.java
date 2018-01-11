@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.text.WordUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -30,8 +29,9 @@ import mrriegel.portals.blocks.BlockPortaal;
 import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.init.ModBlocks;
 import mrriegel.portals.init.ModItems;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
+import mrriegel.portals.items.Upgrade;
 import mrriegel.portals.util.PortalWorldData;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -52,20 +52,25 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.energy.CapabilityEnergy;
 
-public class TileController extends CommonTile implements IPortalFrame, IEnergyReceiver {
+public class TileController extends CommonTile implements IEnergyReceiver {
 
 	public static final int untilPort = 9;
 	public static final int BUTTON = 0, NAME = 1, UPGRADE = 2, ACTIVATE = 3;
 	private static final int MAXFRAMES = 800;
 
+	public enum RedstoneMode {
+		ON, OFF, TOGGLE;
+	}
+
 	private Set<BlockPos> frames = Sets.newHashSet(), portals = Sets.newHashSet();
 	private List<ItemStack> stacks = NonNullList.<ItemStack> withSize(4, ItemStack.EMPTY);
-	private boolean privat, active, valid;
+	private boolean privat, active, valid, powered;
 	private String owner, name = WordUtils.capitalize(RandomStringUtils.random(10, true, !true).toLowerCase()), targetName;
 	private GlobalBlockPos target;
 	private BlockPos selfLanding;
 	private int colorPortal = 0xFFFFFF, colorParticle = 0xFFFFFF, colorFrame = 0xFFFFFF;
 	private EnumFacing looking = EnumFacing.NORTH;
+	private RedstoneMode red = RedstoneMode.ON;
 	private Axis axis = null;
 
 	public EnergyStorageExt en = new EnergyStorageExt(500000, 1000, 0);
@@ -75,13 +80,15 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		Set<BlockPos> set = getPortalBlocks(faces);
 		if (portals == null || !portals.equals(set)) {
 			valid = !set.isEmpty();
+			portals = set;
+			if (!faces.isEmpty())
+				addFrames(faces);
+			if (valid)
+				valid = frames.stream().filter(p -> world.getTileEntity(p) instanceof TileCapa).count() <= 1;
 			if (!valid)
 				setColors(true);
 			if (!valid && active)
 				deactivate();
-			portals = set;
-			if (!faces.isEmpty())
-				addFrames(faces);
 			Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
 			for (BlockPos p : frames) {
 				x.add(p.getX());
@@ -94,7 +101,6 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				axis = Axis.Y;
 			else if (z.size() == 1)
 				axis = Axis.X;
-			Validate.notNull(axis, "What??");
 		}
 		if (valid) {
 			PortalWorldData.INSTANCE.add(new GlobalBlockPos(pos, world));
@@ -125,8 +131,8 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		active = true;
 		markForSync();
 		for (BlockPos p : frames)
-			if (world.getTileEntity(p) instanceof TileFrame)
-				((TileFrame) world.getTileEntity(p)).markForSync();
+			if (world.getTileEntity(p) instanceof TileBasicFrame)
+				((TileBasicFrame) world.getTileEntity(p)).markForSync();
 		if (GlobalBlockPos.fromTile(this).equals(tc.target)) {
 			if (!tc.active)
 				return tc.activate();
@@ -221,21 +227,21 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 			if (fin == null || pa.getLeft().size() > fin.getLeft().size())
 				fin = Pair.of(pa.getLeft(), pa.getRight());
 		}
-		Set<BlockPos> ps = fin != null && fin.getLeft() != null ? Sets.newHashSet(fin.getLeft()) : Sets.<BlockPos> newHashSet();
+		Set<BlockPos> ps = fin != null && fin.getLeft() != null ? Sets.newHashSet(fin.getLeft()) : Sets.newHashSet();
 		if (fin != null && fin.getRight() != null)
 			faces.addAll(valids(fin.getRight().getLeft(), fin.getRight().getRight()));
 		return ps;
 	}
 
 	public void addFrames(Set<EnumFacing> faces) {
-		frames = Sets.newHashSet();
+		frames.clear();
 		for (BlockPos p : portals) {
 			for (EnumFacing face : faces) {
 				BlockPos pp = p.offset(face);
-				if (world.getTileEntity(pp) instanceof TileFrame) {
+				if (world.getTileEntity(pp) instanceof TileBasicFrame) {
 					frames.add(pp);
-					((TileFrame) world.getTileEntity(pp)).setController(this.pos);
-					((TileFrame) world.getTileEntity(pp)).markForSync();
+					((TileBasicFrame) world.getTileEntity(pp)).setController(this.pos);
+					((TileBasicFrame) world.getTileEntity(pp)).markForSync();
 				}
 			}
 		}
@@ -269,7 +275,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	private boolean validFrame(BlockPos p) {
-		return (world.getBlockState(p).getBlock() == ModBlocks.frame && world.getTileEntity(p) instanceof TileFrame && (((TileFrame) world.getTileEntity(p)).getController() == null || ((TileFrame) world.getTileEntity(p)).getController().equals(pos))) || p.equals(this.pos);
+		return (world.getTileEntity(p) instanceof TileBasicFrame && (((TileBasicFrame) world.getTileEntity(p)).getController() == null || ((TileBasicFrame) world.getTileEntity(p)).getController().equals(pos))) || p.equals(this.pos);
 	}
 
 	private boolean validNeighbor(BlockPos p) {
@@ -400,6 +406,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	public void repaintPortal() {
+		PortalWorldData.INSTANCE.refreshColors();
 		for (BlockPos p : getFrames())
 			world.markBlockRangeForRenderUpdate(p.add(-1, -1, -1), p.add(1, 1, 1));
 		for (BlockPos p : getPortals())
@@ -436,8 +443,8 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				public List<String> getData(boolean sneak, EnumFacing facing) {
 					List<String> lis = new ArrayList<>();
 					lis.add(TextFormatting.UNDERLINE + "" + TextFormatting.YELLOW + name);
-					lis.add((valid ? TextFormatting.GREEN + "Valid " : TextFormatting.RED + "Invalid ") + "Structure");
-					lis.add(active ? TextFormatting.GREEN + "On" : TextFormatting.RED + "Off");
+					lis.add((valid ? TextFormatting.GREEN + "Valid " : TextFormatting.DARK_RED + "Invalid ") + "Structure");
+					lis.add(active ? TextFormatting.GREEN + "On" : TextFormatting.DARK_RED + "Off");
 					if (targetName != null)
 						lis.add("Target: " + targetName);
 
@@ -456,7 +463,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 				@Override
 				public double scale(boolean sneak, EnumFacing facing) {
-					return 1.;
+					return 1.2;
 				}
 
 			};
@@ -468,13 +475,15 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	public void setColors(boolean reset) {
-		for (BlockPos p : getFrames()) {
-			if (world.getTileEntity(p) instanceof TileFrame)
-				((TileFrame) world.getTileEntity(p)).setColor(reset ? 0xFFFFFF : getColorFrame());
-		}
-		for (BlockPos p : getPortals()) {
-			if (world.getTileEntity(p) instanceof TilePortaal)
-				((TilePortaal) world.getTileEntity(p)).setColor(reset ? 0xFFFFFF : getColorPortal());
+		if (!reset)
+			PortalWorldData.INSTANCE.refreshColors();
+		else {
+			for (BlockPos p : getFrames()) {
+				PortalWorldData.INSTANCE.frameColors.remove(new GlobalBlockPos(p, world));
+			}
+			for (BlockPos p : getPortals()) {
+				PortalWorldData.INSTANCE.portalColors.remove(new GlobalBlockPos(p, world));
+			}
 		}
 	}
 
@@ -485,9 +494,18 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	@Override
+	public void neighborChanged(IBlockState state, Block block, BlockPos fromPos) {
+		super.neighborChanged(state, block, fromPos);
+		validate();
+		setPowered(world.isBlockPowered(pos));
+	}
+
+	@Override
 	public void handleMessage(EntityPlayer player, NBTTagCompound nbt) {
 		switch (NBTHelper.get(nbt, "kind", int.class)) {
 		case BUTTON:
+			if (world.isRemote)
+				break;
 			String name = NBTHelper.get(nbt, "target", String.class);
 			TileController target = (TileController) PortalWorldData.INSTANCE.getTile(name);
 			if (name.equals(targetName))
@@ -506,7 +524,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				neu = RandomStringUtils.random(10, true, !true);
 			else {
 				int i = 1;
-				while (PortalWorldData.INSTANCE.nameOccupied(neu, pos)) {
+				while (PortalWorldData.INSTANCE.nameOccupied(neu, new GlobalBlockPos(pos, world))) {
 					neu = "Occupied" + i;
 					i++;
 				}
@@ -518,7 +536,6 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 			case COLOR:
 				setColorPortal(NBTHelper.get(nbt, "colorP", int.class));
 				setColorFrame(NBTHelper.get(nbt, "colorF", int.class));
-				//				System.out.println(Integer.toHexString(getColorFrame()));
 				setColors(false);
 				break;
 			case DIRECTION:
@@ -528,7 +545,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				setColorParticle(NBTHelper.get(nbt, "color", int.class));
 				break;
 			case REDSTONE:
-				//TODO
+				setRed(RedstoneMode.values()[(getRed().ordinal() + 1) % RedstoneMode.values().length]);
 				break;
 			}
 			break;
@@ -554,6 +571,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		privat = NBTHelper.get(nbt, "privat", boolean.class);
 		active = NBTHelper.get(nbt, "active", boolean.class);
 		valid = NBTHelper.get(nbt, "valid", boolean.class);
+		powered = NBTHelper.get(nbt, "powered", boolean.class);
 		owner = NBTHelper.get(nbt, "owner", String.class);
 		name = NBTHelper.get(nbt, "name", String.class);
 		targetName = NBTHelper.get(nbt, "targetName", String.class);
@@ -563,6 +581,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		colorParticle = NBTHelper.get(nbt, "colorParticle", int.class);
 		colorFrame = NBTHelper.get(nbt, "colorFrame", int.class);
 		looking = NBTHelper.get(nbt, "looking", EnumFacing.class);
+		red = NBTHelper.get(nbt, "red", RedstoneMode.class);
 		axis = NBTHelper.get(nbt, "axis", Axis.class);
 
 	}
@@ -576,6 +595,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		NBTHelper.set(nbt, "privat", privat);
 		NBTHelper.set(nbt, "active", active);
 		NBTHelper.set(nbt, "valid", valid);
+		NBTHelper.set(nbt, "powered", powered);
 		NBTHelper.set(nbt, "owner", owner);
 		NBTHelper.set(nbt, "name", name);
 		NBTHelper.set(nbt, "targetName", targetName);
@@ -585,6 +605,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		NBTHelper.set(nbt, "colorParticle", colorParticle);
 		NBTHelper.set(nbt, "colorFrame", colorFrame);
 		NBTHelper.set(nbt, "looking", looking);
+		NBTHelper.set(nbt, "red", red);
 		NBTHelper.set(nbt, "axis", axis);
 
 		return super.writeToNBT(nbt);
@@ -628,6 +649,38 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 	public void setValid(boolean valid) {
 		this.valid = valid;
+	}
+
+	public boolean isPowered() {
+		return powered;
+	}
+
+	public void setPowered(boolean powered) {
+		if (!world.isRemote && getUpgrades().contains(Upgrade.REDSTONE))
+			switch (red) {
+			case OFF:
+				if (!powered && !active)
+					activate();
+				else if (powered && active)
+					deactivate();
+				break;
+			case ON:
+				if (powered && !active)
+					activate();
+				else if (!powered && active)
+					deactivate();
+				break;
+			case TOGGLE:
+				if (!this.powered && powered)
+					if (active)
+						deactivate();
+					else
+						activate();
+				break;
+			default:
+				break;
+			}
+		this.powered = powered;
 	}
 
 	public String getOwner() {
@@ -713,9 +766,20 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		this.targetName = targetName;
 	}
 
-	@Override
-	public TileController getTileController() {
-		return this;
+	public RedstoneMode getRed() {
+		return red;
+	}
+
+	public void setRed(RedstoneMode red) {
+		this.red = red;
+	}
+
+	public Axis getAxis() {
+		return axis;
+	}
+
+	public void setAxis(Axis axis) {
+		this.axis = axis;
 	}
 
 	public static boolean portableEntity(Entity entity) {
@@ -734,8 +798,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 	@Override
 	public boolean canConnectEnergy(EnumFacing from) {
-		//TODO config
-		return true;
+		return ModConfig.energyNeeded;
 	}
 
 	@Override

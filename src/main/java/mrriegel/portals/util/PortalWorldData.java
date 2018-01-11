@@ -14,8 +14,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.reflect.TypeToken;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.limelib.network.PacketHandler;
 import mrriegel.limelib.util.GlobalBlockPos;
@@ -29,7 +33,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -46,19 +49,28 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 	public static final PortalWorldData INSTANCE = new PortalWorldData();
 
 	public Set<GlobalBlockPos> validControllers = new HashSet<>();
+	public BiMap<GlobalBlockPos, String> names = HashBiMap.create();
+	public Object2IntMap<GlobalBlockPos> frameColors = new Object2IntOpenHashMap<>();
+	public Object2IntMap<GlobalBlockPos> portalColors = new Object2IntOpenHashMap<>();
 	private File cons;
 
 	private PortalWorldData() {
+		frameColors.defaultReturnValue(0xFFFFFF);
+		portalColors.defaultReturnValue(0xFFFFFF);
 	}
 
 	public void add(GlobalBlockPos pos) {
-		validControllers.add(pos);
-		sync(null);
+		if (!validControllers.contains(pos)) {
+			validControllers.add(pos);
+			sync(null);
+		}
 	}
 
 	public void remove(GlobalBlockPos pos) {
-		validControllers.remove(pos);
-		sync(null);
+		if (!validControllers.contains(pos)) {
+			validControllers.remove(pos);
+			sync(null);
+		}
 	}
 
 	public void sync(EntityPlayer player) {
@@ -81,7 +93,7 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 		return validControllers.stream().filter(p -> validPos(p) && ((TileController) p.getTile()).getName().equals(name)).map(p -> ((TileController) p.getTile())).findAny().orElse(null);
 	}
 
-	public boolean nameOccupied(String name, BlockPos pos) {
+	public boolean nameOccupied(String name, GlobalBlockPos pos) {
 		validate();
 		return validControllers.stream().filter(p -> validPos(p) && !pos.equals(p)).map(p -> ((TileController) p.getTile())).anyMatch(t -> t.getName().equals(name));
 	}
@@ -95,6 +107,18 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 		});
 	}
 
+	public void refreshColors() {
+		frameColors.clear();
+		portalColors.clear();
+		List<TileController> lis = validControllers.stream().map(gp -> (TileController) gp.getTile()).collect(Collectors.toList());
+		for (TileController t : lis) {
+			for (BlockPos p : t.getFrames())
+				frameColors.put(new GlobalBlockPos(p, t.getWorld()), t.getColorFrame());
+			for (BlockPos p : t.getPortals())
+				portalColors.put(new GlobalBlockPos(p, t.getWorld()), t.getColorPortal());
+		}
+	}
+
 	@Override
 	public NBTTagCompound serializeNBT() {
 		NBTTagCompound nbt = new NBTTagCompound();
@@ -106,8 +130,6 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 	public void deserializeNBT(NBTTagCompound nbt) {
 		validControllers = NBTHelper.getList(nbt, "controllers", NBTTagCompound.class).stream().map(GlobalBlockPos::loadGlobalPosFromNBT).collect(Collectors.toSet());
 	}
-
-	public static final ResourceLocation LOCATION = new ResourceLocation(Portals.MODID, "worldPortals");
 
 	@SubscribeEvent
 	public static void tick(WorldTickEvent event) {
@@ -134,7 +156,6 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 	}
 
 	public static void start(MinecraftServer server) throws IOException {
-		new PortalWorldData();
 		File dir = DimensionManager.getCurrentSaveRootDirectory();
 		if (dir == null)
 			dir = server.getActiveAnvilConverter().getSaveLoader(server.getFolderName(), false).getWorldDirectory();

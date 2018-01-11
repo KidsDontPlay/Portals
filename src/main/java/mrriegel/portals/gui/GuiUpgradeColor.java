@@ -7,7 +7,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import mrriegel.limelib.gui.GuiDrawer;
 import mrriegel.limelib.gui.button.CommonGuiButton;
 import mrriegel.limelib.helper.NBTHelper;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
+import mrriegel.portals.items.Upgrade;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.nbt.NBTTagCompound;

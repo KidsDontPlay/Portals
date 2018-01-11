@@ -4,7 +4,7 @@ import org.apache.commons.lang3.text.WordUtils;
 
 import mrriegel.limelib.gui.CommonGuiScreenSub;
 import mrriegel.portals.Portals;
-import mrriegel.portals.items.ItemUpgrade.Upgrade;
+import mrriegel.portals.items.Upgrade;
 import mrriegel.portals.tile.TileController;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;

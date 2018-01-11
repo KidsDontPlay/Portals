@@ -4,7 +4,6 @@ import mrriegel.limelib.block.CommonBlockContainer;
 import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.portals.tile.TileController;
 import mrriegel.portals.util.PortalWorldData;
-import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
@@ -21,19 +20,6 @@ public class BlockController extends CommonBlockContainer<TileController> {
 	@Override
 	protected Class<? extends TileController> getTile() {
 		return TileController.class;
-	}
-
-	@Override
-	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos) {
-		if (worldIn.getTileEntity(pos) instanceof TileController) {
-			//			System.out.println(worldIn.getBlockState(fromPos));
-			TileController tile = (TileController) worldIn.getTileEntity(pos);
-			tile.validatePortal();
-			//			if (worldIn.isBlockPowered(pos) && !tile.isActive())
-			//				tile.activate();
-			//			else if (!worldIn.isBlockPowered(pos) && tile.isActive())
-			//				tile.deactivate();
-		}
 	}
 
 	@Override

@@ -45,6 +45,7 @@ public class GuiPortal extends CommonGuiContainer {
 	public GuiPortal(Container inventorySlotsIn) {
 		super(inventorySlotsIn);
 		tile = ((ContainerPortal) inventorySlotsIn).getTile();
+		tile.repaintPortal();
 		ySize = 166;
 		xSize = 220;
 
@@ -64,7 +65,7 @@ public class GuiPortal extends CommonGuiContainer {
 		name.setTextColor(16777215);
 		name.setText(((ContainerPortal) inventorySlots).getTile().getName());
 		name.setFocused(true);
-		targets = new ArrayList<>(PortalWorldData.getData(mc.world).getNames());
+		targets = new ArrayList<>(PortalWorldData.INSTANCE.getNames());
 		targets.remove(tile.getName());
 		targets.sort((s1, s2) -> s1.toLowerCase().compareTo(s2.toLowerCase()));
 		visibleButtons = Math.min(5, targets.size());
@@ -73,7 +74,7 @@ public class GuiPortal extends CommonGuiContainer {
 			targetButtons.add(new CommonGuiButton(i + 1000, 10 + guiLeft, 21 + i * (fontRenderer.FONT_HEIGHT + 2) + guiTop, 95, fontRenderer.FONT_HEIGHT + 2, "") {
 				@Override
 				public void drawButton(Minecraft mc, int mouseX, int mouseY, float partial) {
-					if (isMouseOver())
+					if (isMouseOver() || displayString.equals(tile.getTargetName()))
 						drawer.drawColoredRectangle(x - 1, y, width, height, ColorHelper.getRGB(0x040404, 100));
 					super.drawButton(mc, mouseX, mouseY, partial);
 				}
@@ -88,6 +89,7 @@ public class GuiPortal extends CommonGuiContainer {
 		if (maxPos == 0)
 			down.enabled = false;
 		buttonList.add(down);
+		buttonList.add(new CommonGuiButton(2002, 130 + guiLeft, 20 + guiTop, 60, 15, ""));
 	}
 
 	@Override
@@ -102,7 +104,7 @@ public class GuiPortal extends CommonGuiContainer {
 		drawer.drawColoredRectangle(110, 30 + (int) (percent * 36), 14, 2, 0xFF050505);
 		name.drawTextBox();
 		fontRenderer.drawString("Name:", 7 + guiLeft, 7 + guiTop, 0x040404, !true);
-		fontRenderer.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 100 + guiLeft, 50 + guiTop, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
+		fontRenderer.drawString("Target: " + (currentTarget != null ? currentTarget : ""), 130 + guiLeft, 50 + guiTop, currentTarget != null && !currentTarget.isEmpty() ? Color.DARK_GRAY.darker().getRGB() : Color.RED.getRGB());
 	}
 
 	@Override
@@ -114,10 +116,9 @@ public class GuiPortal extends CommonGuiContainer {
 				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
 			}
 		}
-		PortalWorldData pwd = PortalWorldData.getData(mc.world);
 		for (GuiButton b : targetButtons) {
 			if (b.isMouseOver()) {
-				GlobalBlockPos gbp = pwd.posMap.get(b.displayString);
+				GlobalBlockPos gbp = GlobalBlockPos.fromTile(PortalWorldData.INSTANCE.getTile(b.displayString));
 				if (gbp != null)
 					drawHoveringText(Lists.newArrayList(WordUtils.capitalizeFully("Dim:" + gbp.getDimension() + ", x:" + gbp.getPos().getX() + " y:" + gbp.getPos().getY() + " z:" + gbp.getPos().getZ())), mouseX - guiLeft, mouseY - guiTop);
 			}
@@ -140,13 +141,14 @@ public class GuiPortal extends CommonGuiContainer {
 			b.displayString = targets.get(i + currentPos);
 		}
 		currentTarget = tile.getTargetName();
+		buttonList.stream().filter(b -> b.id == 2002).forEach(b -> b.displayString = tile.isActive() ? "Deactivate" : "Activate");
 	}
 
 	@Override
 	protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
 		super.mouseClicked(mouseX, mouseY, mouseButton);
 		name.mouseClicked(mouseX, mouseY, mouseButton);
-		if (mouseButton == 1)
+		if (mouseButton == 1 && name.isFocused())
 			name.setText("");
 	}
 
@@ -162,6 +164,9 @@ public class GuiPortal extends CommonGuiContainer {
 		} else if (button.id == 2001) {
 			if (currentPos < maxPos)
 				currentPos++;
+		} else if (button.id == 2002) {
+			NBTTagCompound nbt = NBTHelper.set(new NBTTagCompound(), "kind", TileController.ACTIVATE);
+			tile.sendMessage(nbt);
 		} else {
 			NBTTagCompound nbt = new NBTTagCompound();
 			NBTHelper.set(nbt, "kind", TileController.BUTTON);
@@ -181,6 +186,7 @@ public class GuiPortal extends CommonGuiContainer {
 		NBTHelper.set(nbt, "name", name.getText());
 		tile.sendMessage(nbt);
 		tile.handleMessage(mc.player, nbt);
+		tile.repaintPortal();
 	}
 
 	@Override

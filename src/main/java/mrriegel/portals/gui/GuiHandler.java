@@ -2,7 +2,6 @@ package mrriegel.portals.gui;
 
 import mrriegel.limelib.tile.CommonTile;
 import mrriegel.portals.tile.TileController;
-import mrriegel.portals.util.PortalWorldData;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -14,7 +13,6 @@ public class GuiHandler implements IGuiHandler {
 
 	@Override
 	public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
-		PortalWorldData.getData(world).sync(player);
 		if (world.getTileEntity(new BlockPos(x, y, z)) instanceof CommonTile)
 			((CommonTile) world.getTileEntity(new BlockPos(x, y, z))).sync();
 		if (ID == PORTAL) {

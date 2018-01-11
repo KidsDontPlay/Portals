@@ -25,14 +25,19 @@ public class ContainerPortal extends CommonContainerTile<TileController> {
 			public boolean isItemValidForSlot(int index, ItemStack stack) {
 				return stack.getItem() == ModItems.upgrade;
 			}
+
+			@Override
+			public int getInventoryStackLimit() {
+				return 1;
+			}
 		}));
 		this.save = tile;
-		tmp = (IInventory) invs.get("tile");
+		tmp = invs.get("tile");
 		for (int i = 0; i < tile.getStacks().size(); i++) {
 			ItemStack k = tile.getStacks().get(i);
 			tmp.setInventorySlotContents(i, k);
 		}
-		this.save.sync();
+		this.save.markForSync();
 		if (!tile.getWorld().isRemote) {
 			if (tile.isActive() && !TileController.isPortalActive(tile.getTarget()))
 				tile.deactivate();
@@ -45,7 +50,8 @@ public class ContainerPortal extends CommonContainerTile<TileController> {
 		for (int i = 0; i < save.getStacks().size(); i++) {
 			save.getStacks().set(i, tmp.getStackInSlot(i));
 		}
-		save.sync();
+		save.markForSync();
+		save.setColors(false);
 	}
 
 	@Override
@@ -59,6 +65,11 @@ public class ContainerPortal extends CommonContainerTile<TileController> {
 		List<Area> lis = Lists.newArrayList();
 		lis.add(inv == invPlayer ? stack.getItem() == ModItems.upgrade ? getAreaForEntireInv(tmp) : null : getAreaForEntireInv(invPlayer));
 		return lis;
+	}
+
+	@Override
+	public boolean canInteractWith(EntityPlayer playerIn) {
+		return save != null && !save.isInvalid();
 	}
 
 }

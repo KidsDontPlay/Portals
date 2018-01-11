@@ -26,12 +26,13 @@ public class BlockController extends CommonBlockContainer<TileController> {
 	@Override
 	public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos) {
 		if (worldIn.getTileEntity(pos) instanceof TileController) {
+			//			System.out.println(worldIn.getBlockState(fromPos));
 			TileController tile = (TileController) worldIn.getTileEntity(pos);
 			tile.validatePortal();
-			if (worldIn.isBlockPowered(pos) && !tile.isActive())
-				tile.activate();
-			else if (!worldIn.isBlockPowered(pos) && tile.isActive())
-				tile.deactivate();
+			//			if (worldIn.isBlockPowered(pos) && !tile.isActive())
+			//				tile.activate();
+			//			else if (!worldIn.isBlockPowered(pos) && tile.isActive())
+			//				tile.deactivate();
 		}
 	}
 
@@ -47,9 +48,8 @@ public class BlockController extends CommonBlockContainer<TileController> {
 		super.breakBlock(worldIn, pos, state);
 		// if (!worldIn.isRemote)
 		{
-			PortalWorldData data = PortalWorldData.getData(worldIn);
-			data.remove(pos);
-			data.validControllers.stream().map(p -> (TileController) worldIn.getTileEntity(p)).//
+			PortalWorldData.INSTANCE.remove(new GlobalBlockPos(pos, worldIn));
+			PortalWorldData.INSTANCE.validControllers.stream().map(p -> (TileController) p.getTile()).//
 					filter(t -> t != null && new GlobalBlockPos(pos, worldIn).equals(t.getTarget())).forEach(t -> t.setTarget(null));
 		}
 	}

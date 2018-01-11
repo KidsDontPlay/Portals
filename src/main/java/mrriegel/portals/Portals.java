@@ -1,6 +1,9 @@
 package mrriegel.portals;
 
+import java.io.IOException;
+
 import mrriegel.portals.proxy.CommonProxy;
+import mrriegel.portals.util.PortalWorldData;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
@@ -8,6 +11,8 @@ import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 
 @Mod(modid = Portals.MODID, name = Portals.MODNAME, version = Portals.VERSION, acceptedMinecraftVersions = "[1.12,1.13)", dependencies = "required-after:limelib@[1.7.7,)")
 public class Portals {
@@ -34,6 +39,24 @@ public class Portals {
 	@EventHandler
 	public void postInit(FMLPostInitializationEvent event) {
 		proxy.postInit(event);
+	}
+
+	@EventHandler
+	public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+		try {
+			PortalWorldData.start(event.getServer());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@EventHandler
+	public void serverStopping(FMLServerStoppingEvent event) {
+		try {
+			PortalWorldData.stop();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

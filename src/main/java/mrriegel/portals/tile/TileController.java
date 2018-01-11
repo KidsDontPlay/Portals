@@ -1,9 +1,12 @@
 package mrriegel.portals.tile;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -11,21 +14,22 @@ import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.text.WordUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import cofh.redstoneflux.api.IEnergyReceiver;
-import cofh.redstoneflux.impl.EnergyStorage;
 import mrriegel.limelib.helper.NBTHelper;
 import mrriegel.limelib.helper.TeleportationHelper;
 import mrriegel.limelib.tile.CommonTile;
 import mrriegel.limelib.tile.IHUDProvider;
+import mrriegel.limelib.util.EnergyStorageExt;
 import mrriegel.limelib.util.GlobalBlockPos;
 import mrriegel.limelib.util.LimeCapabilities;
+import mrriegel.portals.ModConfig;
 import mrriegel.portals.Portals;
 import mrriegel.portals.blocks.BlockPortaal;
 import mrriegel.portals.gui.GuiHandler;
 import mrriegel.portals.init.ModBlocks;
+import mrriegel.portals.init.ModItems;
 import mrriegel.portals.items.ItemUpgrade.Upgrade;
 import mrriegel.portals.util.PortalWorldData;
 import net.minecraft.block.state.IBlockState;
@@ -34,26 +38,25 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.energy.CapabilityEnergy;
 
 public class TileController extends CommonTile implements IPortalFrame, IEnergyReceiver {
 
 	public static final int untilPort = 9;
-	public static final int BUTTON = 0, NAME = 1, UPGRADE = 2;
-	private static final int MAXFRAMES = 300;
+	public static final int BUTTON = 0, NAME = 1, UPGRADE = 2, ACTIVATE = 3;
+	private static final int MAXFRAMES = 800;
 
 	private Set<BlockPos> frames = Sets.newHashSet(), portals = Sets.newHashSet();
 	private List<ItemStack> stacks = NonNullList.<ItemStack> withSize(4, ItemStack.EMPTY);
@@ -61,21 +64,22 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	private String owner, name = WordUtils.capitalize(RandomStringUtils.random(10, true, !true).toLowerCase()), targetName;
 	private GlobalBlockPos target;
 	private BlockPos selfLanding;
-	private int colorPortal = 0x9500fe, colorParticle = 0x9500fe, colorFrame = 0x9500fe;
+	private int colorPortal = 0xFFFFFF, colorParticle = 0xFFFFFF, colorFrame = 0xFFFFFF;
 	private EnumFacing looking = EnumFacing.NORTH;
 	private Axis axis = null;
 
-	public EnergyStorage en = new EnergyStorage(64000, 1000, 0);
+	public EnergyStorageExt en = new EnergyStorageExt(500000, 1000, 0);
 
 	public boolean validatePortal() {
 		Set<EnumFacing> faces = Sets.newHashSet();
 		Set<BlockPos> set = getPortalBlocks(faces);
 		if (portals == null || !portals.equals(set)) {
 			valid = !set.isEmpty();
+			if (!valid)
+				setColors(true);
 			if (!valid && active)
 				deactivate();
 			portals = set;
-			// System.out.println("fac: "+faces.size());
 			if (!faces.isEmpty())
 				addFrames(faces);
 			Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
@@ -93,13 +97,13 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 			Validate.notNull(axis, "What??");
 		}
 		if (valid) {
-			PortalWorldData.getData(world).add(pos);
+			PortalWorldData.INSTANCE.add(new GlobalBlockPos(pos, world));
 			calculateLanding();
 		} else {
-			PortalWorldData.getData(world).remove(pos);
+			PortalWorldData.INSTANCE.remove(new GlobalBlockPos(pos, world));
 			selfLanding = null;
 		}
-		sync();
+		markForSync();
 		return valid;
 	}
 
@@ -107,18 +111,31 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		if (!validatePortal()) {
 			return false;
 		}
-		if (target == null)
+		if (target == null) {
+			return false;
+		}
+		TileController tc = (TileController) target.getTile();
+		if (!tc.validatePortal())
 			return false;
 		for (BlockPos p : portals) {
-			world.setBlockState(p, ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, axis));
+			world.setBlockState(p, ModBlocks.portaal.getDefaultState().withProperty(BlockPortaal.AXIS, axis), 2);
 			((TilePortaal) world.getTileEntity(p)).setController(this.pos);
-			((TilePortaal) world.getTileEntity(p)).markDirty();
+			((TilePortaal) world.getTileEntity(p)).markForSync();
 		}
 		active = true;
-		sync();
+		markForSync();
 		for (BlockPos p : frames)
 			if (world.getTileEntity(p) instanceof TileFrame)
-				((TileFrame) world.getTileEntity(p)).sync();
+				((TileFrame) world.getTileEntity(p)).markForSync();
+		if (GlobalBlockPos.fromTile(this).equals(tc.target)) {
+			if (!tc.active)
+				return tc.activate();
+		} else {
+			if (tc.target != null)
+				tc.deactivate();
+			tc.setTarget(GlobalBlockPos.fromTile(this));
+			return tc.activate();
+		}
 		return true;
 
 	}
@@ -126,18 +143,16 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	public void deactivate() {
 		for (BlockPos p : portals)
 			if (world.getBlockState(p).getBlock() == ModBlocks.portaal) {
-				world.setBlockToAir(p);
+				world.setBlockState(p, Blocks.AIR.getDefaultState(), 2);
 			}
-		// for (BlockPos p : frames)
-		// if (worldObj.getTileEntity(p) instanceof TileFrame) {
-		// ((TileFrame) worldObj.getTileEntity(p)).setController(null);
-		// ((TileFrame) worldObj.getTileEntity(p)).sync();
-		// }
-		active = false;
-		sync();
-		for (BlockPos p : frames)
-			if (world.getTileEntity(p) instanceof TileFrame)
-				((TileFrame) world.getTileEntity(p)).sync();
+		if (active) {
+			active = false;
+			if (target != null) {
+				TileController tc = (TileController) target.getTile();
+				tc.deactivate();
+			}
+		}
+		markForSync();
 
 	}
 
@@ -170,18 +185,20 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 					}
 				}
 			}
-			System.out.println(axis);
-			selfs.sort((a, b) -> {
-				int x = Integer.compare(a.getX() + a.getZ(), b.getX() + b.getZ());
-				return x;
-			});
+			Map<BlockPos, Double> map = new HashMap<>();
+			for (BlockPos p : selfs) {
+				double dis = 0;
+				for (BlockPos pp : selfs) {
+					dis += pp.distanceSq(p);
+				}
+				map.put(p, dis);
+			}
 
-			selfLanding = selfs.get(MathHelper.clamp(selfs.size() / 2, 0, selfs.size() - 1));
+			selfLanding = map.entrySet().stream().reduce((e1, e2) -> e1.getValue() < e2.getValue() ? e1 : e2).get().getKey();
 		}
 	}
 
 	public Set<BlockPos> getPortalBlocks(Set<EnumFacing> faces) {
-		Set<BlockPos> ps = Sets.newHashSet();
 		Set<Pair<Set<BlockPos>, Pair<EnumFacing, Integer>>> sets = Sets.newHashSet();
 		for (EnumFacing f : EnumFacing.VALUES) {
 			for (int i = 0; i < 2; i++) {
@@ -204,7 +221,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 			if (fin == null || pa.getLeft().size() > fin.getLeft().size())
 				fin = Pair.of(pa.getLeft(), pa.getRight());
 		}
-		ps = fin != null && fin.getLeft() != null ? Sets.newHashSet(fin.getLeft()) : Sets.<BlockPos> newHashSet();
+		Set<BlockPos> ps = fin != null && fin.getLeft() != null ? Sets.newHashSet(fin.getLeft()) : Sets.<BlockPos> newHashSet();
 		if (fin != null && fin.getRight() != null)
 			faces.addAll(valids(fin.getRight().getLeft(), fin.getRight().getRight()));
 		return ps;
@@ -218,14 +235,14 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				if (world.getTileEntity(pp) instanceof TileFrame) {
 					frames.add(pp);
 					((TileFrame) world.getTileEntity(pp)).setController(this.pos);
-					((TileFrame) world.getTileEntity(pp)).sync();
+					((TileFrame) world.getTileEntity(pp)).markForSync();
 				}
 			}
 		}
 	}
 
 	private void addPortals(BlockPos pos, Set<BlockPos> portals, Set<EnumFacing> faces) {
-		if (portals.size() > MAXFRAMES)
+		if (portals.size() >= MAXFRAMES)
 			return;
 		for (EnumFacing face : faces) {
 			BlockPos bl = pos.offset(face);
@@ -252,7 +269,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	}
 
 	private boolean validFrame(BlockPos p) {
-		return world.getBlockState(p).getBlock() == ModBlocks.frame || p.equals(this.pos);
+		return (world.getBlockState(p).getBlock() == ModBlocks.frame && world.getTileEntity(p) instanceof TileFrame && (((TileFrame) world.getTileEntity(p)).getController() == null || ((TileFrame) world.getTileEntity(p)).getController().equals(pos))) || p.equals(this.pos);
 	}
 
 	private boolean validNeighbor(BlockPos p) {
@@ -340,7 +357,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	public Set<Upgrade> getUpgrades() {
 		Set<Upgrade> set = Sets.newHashSet();
 		for (ItemStack stack : stacks) {
-			if (stack != null) {
+			if (stack.getItem() == ModItems.upgrade) {
 				set.add(Upgrade.values()[stack.getItemDamage()]);
 			}
 		}
@@ -353,41 +370,50 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		TileController tar = (TileController) target.getTile();
 		if (tar == null || tar.selfLanding == null)
 			return;
+		//		Vec3d motion = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
+		int need = !ModConfig.energyNeeded ? 0 : target.getDimension() != world.provider.getDimension() ? 100000 : //
+				(int) Math.sqrt(tar.getPos().distanceSq(pos)) * 20;
+		need = Math.min(need, en.getMaxEnergyStored());
+		if (need > en.getEnergyStored())
+			return;
 		entity.getEntityData().setBoolean("ported", true);
-		Vec3d motion = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
-		System.out.println(entity.motionX + " " + entity.motionY + " " + entity.motionZ + " ");
-		TeleportationHelper.teleport(entity, tar.getSelfLanding(), target.getDimension());
-		if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
-			if (entity instanceof EntityPlayerMP) {
-				EntityPlayerMP player = (EntityPlayerMP) entity;
-				player.rotationYaw = tar.looking.getHorizontalAngle();
-				player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+		Optional<Entity> op = TeleportationHelper.teleport(entity, tar.getSelfLanding(), target.getDimension());
+		if (op.isPresent()) {
+			en.modifyEnergyStored(-need);
+			entity = op.get();
+			if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
+				if (entity instanceof EntityPlayerMP) {
+					EntityPlayerMP player = (EntityPlayerMP) entity;
+					player.rotationYaw = tar.looking.getHorizontalAngle();
+					player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+				}
 			}
+			//			if (tar.getUpgrades().contains(Upgrade.MOTION))
+			//				if (entity instanceof EntityPlayerMP)
+			//					((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity.getEntityId(), motion.x, motion.y, motion.z));
+			//				else {
+			//					entity.motionX = motion.x;
+			//					entity.motionY = motion.y;
+			//					entity.motionZ = motion.z;
+			//				}
 		}
+	}
 
-		if (tar.getUpgrades().contains(Upgrade.MOTION))
-			if (entity instanceof EntityPlayerMP)
-				((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity.getEntityId(), motion.x, motion.y, motion.z));
-			else {
-				entity.motionX = motion.x;
-				entity.motionY = motion.y;
-				entity.motionZ = motion.z;
-			}
+	public void repaintPortal() {
+		for (BlockPos p : getFrames())
+			world.markBlockRangeForRenderUpdate(p.add(-1, -1, -1), p.add(1, 1, 1));
+		for (BlockPos p : getPortals())
+			world.markBlockRangeForRenderUpdate(p.add(-1, -1, -1), p.add(1, 1, 1));
 	}
 
 	@Override
 	public List<ItemStack> getDroppingItems() {
-		return Lists.newArrayList(stacks);
+		return stacks;
 	}
 
 	@Override
 	public boolean openGUI(EntityPlayerMP player) {
-		if ("!".isEmpty()) {
-			validatePortal();
-			if (selfLanding != null)
-				TeleportationHelper.teleport(player, selfLanding);
-			return false;
-		}
+		validatePortal();
 		if (!valid) {
 			player.sendStatusMessage(new TextComponentString(TextFormatting.RED + "Invalid Structure"), true);
 			return true;
@@ -398,7 +424,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 	@Override
 	public boolean hasCapability(Capability<?> capability, EnumFacing facing) {
-		return capability == LimeCapabilities.hudproviderCapa || super.hasCapability(capability, facing);
+		return (capability == CapabilityEnergy.ENERGY && ModConfig.energyNeeded) || capability == LimeCapabilities.hudproviderCapa || super.hasCapability(capability, facing);
 	}
 
 	@Override
@@ -409,7 +435,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 				@Override
 				public List<String> getData(boolean sneak, EnumFacing facing) {
 					List<String> lis = new ArrayList<>();
-					lis.add(TextFormatting.YELLOW + name);
+					lis.add(TextFormatting.UNDERLINE + "" + TextFormatting.YELLOW + name);
 					lis.add((valid ? TextFormatting.GREEN + "Valid " : TextFormatting.RED + "Invalid ") + "Structure");
 					lis.add(active ? TextFormatting.GREEN + "On" : TextFormatting.RED + "Off");
 					if (targetName != null)
@@ -417,36 +443,83 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 					return lis;
 				}
+
+				@Override
+				public boolean lineBreak(boolean sneak, EnumFacing facing) {
+					return false;
+				}
+
+				@Override
+				public int getBackgroundColor(boolean sneak, EnumFacing facing) {
+					return 0x888E8E8E;
+				}
+
+				@Override
+				public double scale(boolean sneak, EnumFacing facing) {
+					return 1.;
+				}
+
 			};
 		}
+		if (capability == CapabilityEnergy.ENERGY && ModConfig.energyNeeded) {
+			return (T) en;
+		}
 		return super.getCapability(capability, facing);
+	}
+
+	public void setColors(boolean reset) {
+		for (BlockPos p : getFrames()) {
+			if (world.getTileEntity(p) instanceof TileFrame)
+				((TileFrame) world.getTileEntity(p)).setColor(reset ? 0xFFFFFF : getColorFrame());
+		}
+		for (BlockPos p : getPortals()) {
+			if (world.getTileEntity(p) instanceof TilePortaal)
+				((TilePortaal) world.getTileEntity(p)).setColor(reset ? 0xFFFFFF : getColorPortal());
+		}
+	}
+
+	@Override
+	public void invalidate() {
+		super.invalidate();
+		setColors(true);
 	}
 
 	@Override
 	public void handleMessage(EntityPlayer player, NBTTagCompound nbt) {
 		switch (NBTHelper.get(nbt, "kind", int.class)) {
 		case BUTTON:
-			TileController target = PortalWorldData.getData(world).getTile(NBTHelper.get(nbt, "target", String.class));
-			if (target != null)
+			String name = NBTHelper.get(nbt, "target", String.class);
+			TileController target = (TileController) PortalWorldData.INSTANCE.getTile(name);
+			if (name.equals(targetName))
+				setTarget(null);
+			else if (target != null) {
+				if (this.target != null)
+					deactivate();
 				setTarget(GlobalBlockPos.fromTile(target));
+			}
 			break;
 		case NAME:
-			PortalWorldData data = PortalWorldData.getData(world);
+			if (world.isRemote)
+				break;
 			String neu = NBTHelper.get(nbt, "name", String.class);
 			if (neu.isEmpty())
-				neu = RandomStringUtils.random(10, true, true);
-			int i = 1;
-			while (data.nameOccupied(neu, pos)) {
-				neu = "Occupied" + i;
-				i++;
+				neu = RandomStringUtils.random(10, true, !true);
+			else {
+				int i = 1;
+				while (PortalWorldData.INSTANCE.nameOccupied(neu, pos)) {
+					neu = "Occupied" + i;
+					i++;
+				}
+				setName(neu);
 			}
-			setName(neu);
 			break;
 		case UPGRADE:
 			switch (Upgrade.values()[NBTHelper.get(nbt, "id", int.class)]) {
 			case COLOR:
 				setColorPortal(NBTHelper.get(nbt, "colorP", int.class));
 				setColorFrame(NBTHelper.get(nbt, "colorF", int.class));
+				//				System.out.println(Integer.toHexString(getColorFrame()));
+				setColors(false);
 				break;
 			case DIRECTION:
 				setLooking(getLooking().rotateAround(Axis.Y));
@@ -454,7 +527,16 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 			case PARTICLE:
 				setColorParticle(NBTHelper.get(nbt, "color", int.class));
 				break;
+			case REDSTONE:
+				//TODO
+				break;
 			}
+			break;
+		case ACTIVATE:
+			if (active)
+				deactivate();
+			else
+				activate();
 			break;
 		default:
 			break;
@@ -465,7 +547,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	@Override
 	public void readFromNBT(NBTTagCompound nbt) {
 		super.readFromNBT(nbt);
-		en.readFromNBT(nbt);
+		en.setEnergyStored(NBTHelper.get(nbt, "energy", int.class));
 		frames = new HashSet<>(NBTHelper.getList(nbt, "frames", BlockPos.class));
 		portals = new HashSet<>(NBTHelper.getList(nbt, "portals", BlockPos.class));
 		stacks = NBTHelper.getList(nbt, "stacks", ItemStack.class);
@@ -487,7 +569,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
-		en.writeToNBT(nbt);
+		NBTHelper.set(nbt, "energy", en.getEnergyStored());
 		NBTHelper.setList(nbt, "frames", new ArrayList<>(frames));
 		NBTHelper.setList(nbt, "portals", new ArrayList<>(portals));
 		NBTHelper.setList(nbt, "stacks", stacks);
@@ -652,6 +734,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 
 	@Override
 	public boolean canConnectEnergy(EnumFacing from) {
+		//TODO config
 		return true;
 	}
 
@@ -660,6 +743,7 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 		return en.receiveEnergy(maxReceive, simulate);
 	}
 
+	@SuppressWarnings("serial")
 	private static class PortalException extends RuntimeException {
 		public PortalException(String msg) {
 			super(msg);
@@ -669,22 +753,9 @@ public class TileController extends CommonTile implements IPortalFrame, IEnergyR
 	public static boolean isPortalActive(GlobalBlockPos pos) {
 		if (pos == null)
 			return false;
-		boolean valid = PortalWorldData.getData(pos.getWorld()).validPos(pos.getPos());
+		boolean valid = PortalWorldData.INSTANCE.validPos(pos);
 		if (!valid)
 			return false;
-		if (pos.getTile() instanceof TileController && ((TileController) pos.getTile()).isActive() // &&
-		// ((TileController)
-		// pos.getTile()).getTarget().equals(new
-		// GlobalBlockPos(this.pos,
-		// worldObj))
-		)
-			return true;
-		// for (EnumFacing face : EnumFacing.VALUES) {
-		// if
-		// (pos.getWorld(worldObj).getBlockState(pos.getPos().offset(face)).getBlock()
-		// == ModBlocks.portaal)
-		// return true;
-		// }
-		return false;
+		return pos.getTile() instanceof TileController && ((TileController) pos.getTile()).isActive();
 	}
 }

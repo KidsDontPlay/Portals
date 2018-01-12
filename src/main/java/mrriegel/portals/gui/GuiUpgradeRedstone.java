@@ -36,7 +36,7 @@ public class GuiUpgradeRedstone extends GuiUpgrade {
 	@Override
 	public void updateScreen() {
 		super.updateScreen();
-		String k = "";
+		String k = null;
 		switch (tile.getRed()) {
 		case OFF:
 			k = "Portal is on when not powered.";

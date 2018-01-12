@@ -48,9 +48,9 @@ public class TileBasicFrame extends CommonTile {
 	@Override
 	public void neighborChanged(IBlockState state, Block block, BlockPos fromPos) {
 		if (getController() != null) {
-			if (world.getTileEntity(getController()) instanceof TileController)
+			if (world.getTileEntity(getController()) instanceof TileController) {
 				((TileController) world.getTileEntity(getController())).validatePortal();
-			else
+			} else
 				setController(null);
 		}
 	}

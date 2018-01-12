@@ -69,6 +69,8 @@ public class ContainerPortal extends CommonContainerTile<TileController> {
 
 	@Override
 	public boolean canInteractWith(EntityPlayer playerIn) {
+		if (playerIn.ticksExisted % 4 == 0)
+			save.markForSync();
 		return save != null && !save.isInvalid();
 	}
 

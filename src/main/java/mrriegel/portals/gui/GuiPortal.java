@@ -26,7 +26,6 @@ import mrriegel.portals.util.PortalWorldData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.nbt.NBTTagCompound;
@@ -114,19 +113,24 @@ public class GuiPortal extends CommonGuiContainer {
 	@Override
 	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
 		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
-		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
-		for (int k = 0; k < inv.getSizeInventory(); k++) {
-			if (!inv.getStackInSlot(k).isEmpty() && Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
-				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
-			}
-		}
+		//		IInventory inv = ((ContainerPortal) inventorySlots).tmp;
+		//		for (int k = 0; k < inv.getSizeInventory(); k++) {
+		//			if (!inv.getStackInSlot(k).isEmpty() && Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].hasButton && buttonList.get(k).isMouseOver()) {
+		//				//				drawHoveringText(Lists.newArrayList(I18n.format("tooltip.portals." + Upgrade.values()[inv.getStackInSlot(k).getItemDamage()].name().toLowerCase())), mouseX - guiLeft, mouseY - guiTop);
+		//			}
+		//		}
+	}
+
+	@Override
+	public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+		super.drawScreen(mouseX, mouseY, partialTicks);
 		if (isPointInRegion(199, 6, 9, 72, mouseX, mouseY))
-			drawHoveringText(tile.getEnergyStored(null) + "/" + tile.getMaxEnergyStored(null) + " FE", mouseX - guiLeft, mouseY - guiTop);
+			drawHoveringText(tile.getEnergyStored(null) + "/" + tile.getMaxEnergyStored(null) + " FE", mouseX, mouseY);
 		for (GuiButton b : targetButtons) {
 			if (b.isMouseOver()) {
 				GlobalBlockPos gbp = PortalWorldData.INSTANCE.names.inverse().get(b.displayString);
 				if (gbp != null)
-					drawHoveringText(Lists.newArrayList(WordUtils.capitalizeFully("Dim:" + gbp.getDimension() + ", x:" + gbp.getPos().getX() + " y:" + gbp.getPos().getY() + " z:" + gbp.getPos().getZ())), mouseX - guiLeft, mouseY - guiTop);
+					drawHoveringText(Lists.newArrayList(WordUtils.capitalizeFully("Dim:" + gbp.getDimension() + ", x:" + gbp.getPos().getX() + " y:" + gbp.getPos().getY() + " z:" + gbp.getPos().getZ())), mouseX, mouseY);
 			}
 		}
 	}

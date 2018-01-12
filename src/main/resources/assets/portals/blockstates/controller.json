@@ -4,7 +4,7 @@
         "textures":{
             "all":"portals:blocks/controller"
         },
-        "model":"portals:controller"
+        "model":"portals:tintblock"
     },
     "variants":{
         "normal":[{

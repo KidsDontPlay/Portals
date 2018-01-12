@@ -2,7 +2,7 @@
     "forge_marker":1,
     "defaults":{
         "textures":{
-            "all":"portals:blocks/frame"
+            "all":"portals:blocks/capa"
         },
         "model":"portals:tintblock"
     },

@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,10 +48,11 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 	public static final PortalWorldData INSTANCE = new PortalWorldData();
 
 	public Set<GlobalBlockPos> validControllers = new HashSet<>();
+	private File cons;
+	//client
 	public BiMap<GlobalBlockPos, String> names = HashBiMap.create();
 	public Object2IntMap<GlobalBlockPos> frameColors = new Object2IntOpenHashMap<>();
 	public Object2IntMap<GlobalBlockPos> portalColors = new Object2IntOpenHashMap<>();
-	private File cons;
 
 	private PortalWorldData() {
 		frameColors.defaultReturnValue(0xFFFFFF);
@@ -67,7 +67,7 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 	}
 
 	public void remove(GlobalBlockPos pos) {
-		if (!validControllers.contains(pos)) {
+		if (validControllers.contains(pos)) {
 			validControllers.remove(pos);
 			sync(null);
 		}
@@ -160,19 +160,21 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 		if (dir == null)
 			dir = server.getActiveAnvilConverter().getSaveLoader(server.getFolderName(), false).getWorldDirectory();
 		dir.mkdirs();
-		File myDir = new File(dir, "Portal Data");
+		File myDir = new File(dir, "Portal_Data");
 		myDir.mkdirs();
 		INSTANCE.cons = new File(myDir, "portals.json");
 		BufferedReader br = new BufferedReader(new FileReader(INSTANCE.cons));
-		Set<NBTTagCompound> set = Utils.getGSON().fromJson(br, new TypeToken<Set<NBTTagCompound>>() {
+		@SuppressWarnings("serial")
+		NBTTagCompound n = Utils.getGSON().fromJson(br, new TypeToken<NBTTagCompound>() {
 		}.getType());
 		br.close();
-		if (set != null)
-			INSTANCE.validControllers = set.stream().map(GlobalBlockPos::loadGlobalPosFromNBT).filter(Objects::nonNull).collect(Collectors.toSet());
+		if (n != null) {
+			INSTANCE.deserializeNBT(n);
+		}
 	}
 
 	public static void stop() throws IOException {
-		String s = Utils.getGSON().toJson(INSTANCE.validControllers.stream().map(g -> g.writeToNBT(new NBTTagCompound())).collect(Collectors.toSet()));
+		String s = Utils.getGSON().toJson(INSTANCE.serializeNBT());
 		BufferedWriter bw = new BufferedWriter(new FileWriter(INSTANCE.cons));
 		bw.write(s);
 		bw.close();

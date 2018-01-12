@@ -11,7 +11,6 @@ public class ItemUpgrade extends CommonSubtypeItem {
 	public ItemUpgrade() {
 		super("upgrade", Upgrade.values().length);
 		setCreativeTab(CreativeTabs.TRANSPORTATION);
-		setHasSubtypes(true);
 	}
 
 	@Override

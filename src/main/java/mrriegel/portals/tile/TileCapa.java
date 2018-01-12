@@ -14,7 +14,7 @@ public class TileCapa extends TileBasicFrame {
 			for (EnumFacing f : EnumFacing.VALUES) {
 				TileEntity t2 = tc.getWorld().getTileEntity(tc.getPos().offset(f.getOpposite()));
 				boolean has = false;
-				if (t2 != null && (has = t2.hasCapability(capability, f)))
+				if (t2 != null && !t2.getPos().equals(getController()) && t2.getWorld().isBlockLoaded(t2.getPos()) && (has = t2.hasCapability(capability, facing == null ? null : f)))
 					return has;
 			}
 		return super.hasCapability(capability, facing);
@@ -27,7 +27,7 @@ public class TileCapa extends TileBasicFrame {
 			for (EnumFacing f : EnumFacing.VALUES) {
 				TileEntity t2 = tc.getWorld().getTileEntity(tc.getPos().offset(f.getOpposite()));
 				T get = null;
-				if (t2 != null && (get = t2.getCapability(capability, f)) != null)
+				if (t2 != null && !t2.getPos().equals(getController()) && t2.getWorld().isBlockLoaded(t2.getPos()) && (get = t2.getCapability(capability, facing == null ? null : f)) != null)
 					return get;
 			}
 		return super.getCapability(capability, facing);

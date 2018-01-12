@@ -80,15 +80,19 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 		Set<BlockPos> set = getPortalBlocks(faces);
 		if (portals == null || !portals.equals(set)) {
 			valid = !set.isEmpty();
+			Set<BlockPos> prevPortals = new HashSet<>(portals);
 			portals = set;
 			if (!faces.isEmpty())
 				addFrames(faces);
 			if (valid)
 				valid = frames.stream().filter(p -> world.getTileEntity(p) instanceof TileCapa).count() <= 1;
-			if (!valid)
-				setColors(true);
-			if (!valid && active)
+			if (valid)
+				valid = frames.stream().allMatch(p -> world.getTileEntity(p) instanceof TileBasicFrame);
+			if (active && (!valid || (valid && portals.size() != prevPortals.size()))) {
+				portals = prevPortals;
 				deactivate();
+				portals = set;
+			}
 			Set<Integer> x = Sets.newHashSet(), y = Sets.newHashSet(), z = Sets.newHashSet();
 			for (BlockPos p : frames) {
 				x.add(p.getX());
@@ -217,7 +221,6 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 					if (portals.size() <= MAXFRAMES && validNeighbors(portals, valids(f, i)))
 						sets.add(Pair.of(portals, Pair.of(f, i)));
 				} catch (PortalException e) {
-					// Portals.logger.error(e.getLocalizedMessage());
 				}
 			}
 		}
@@ -231,20 +234,6 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 		if (fin != null && fin.getRight() != null)
 			faces.addAll(valids(fin.getRight().getLeft(), fin.getRight().getRight()));
 		return ps;
-	}
-
-	public void addFrames(Set<EnumFacing> faces) {
-		frames.clear();
-		for (BlockPos p : portals) {
-			for (EnumFacing face : faces) {
-				BlockPos pp = p.offset(face);
-				if (world.getTileEntity(pp) instanceof TileBasicFrame) {
-					frames.add(pp);
-					((TileBasicFrame) world.getTileEntity(pp)).setController(this.pos);
-					((TileBasicFrame) world.getTileEntity(pp)).markForSync();
-				}
-			}
-		}
 	}
 
 	private void addPortals(BlockPos pos, Set<BlockPos> portals, Set<EnumFacing> faces) {
@@ -360,6 +349,20 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 		return set;
 	}
 
+	public void addFrames(Set<EnumFacing> faces) {
+		frames.clear();
+		for (BlockPos p : portals) {
+			for (EnumFacing face : faces) {
+				BlockPos pp = p.offset(face);
+				if (world.getTileEntity(pp) instanceof TileBasicFrame) {
+					frames.add(pp);
+					((TileBasicFrame) world.getTileEntity(pp)).setController(this.pos);
+					((TileBasicFrame) world.getTileEntity(pp)).markForSync();
+				}
+			}
+		}
+	}
+
 	public Set<Upgrade> getUpgrades() {
 		Set<Upgrade> set = Sets.newHashSet();
 		for (ItemStack stack : stacks) {
@@ -387,11 +390,36 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 		if (op.isPresent()) {
 			en.modifyEnergyStored(-need);
 			entity = op.get();
+			entity.fallDistance = 0f;
+			//			world.playSound(null, entity.posX, entity.posY, entity.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, SoundCategory.BLOCKS, .8f, .8f);
 			if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
 				if (entity instanceof EntityPlayerMP) {
 					EntityPlayerMP player = (EntityPlayerMP) entity;
 					player.rotationYaw = tar.looking.getHorizontalAngle();
 					player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+				} else
+					entity.rotationYaw = tar.looking.getHorizontalAngle();
+			} else {
+				EnumFacing f = entity.getHorizontalFacing();
+				BlockPos ent = new BlockPos(entity);
+				BlockPos front = ent.offset(f);
+				if (world.getBlockState(front).getCollisionBoundingBox(world, front) != null) {
+					EnumFacing fin = null;
+					for (int i = 0; i < 4; i++) {
+						f = f.rotateY();
+						if (world.getBlockState(ent.offset(f)).getCollisionBoundingBox(world, ent.offset(f)) == null) {
+							fin = f;
+							break;
+						}
+					}
+					if (fin != null) {
+						if (entity instanceof EntityPlayerMP) {
+							EntityPlayerMP player = (EntityPlayerMP) entity;
+							player.rotationYaw = fin.getHorizontalAngle();
+							player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+						} else
+							entity.rotationYaw = fin.getHorizontalAngle();
+					}
 				}
 			}
 			//			if (tar.getUpgrades().contains(Upgrade.MOTION))
@@ -491,6 +519,18 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 	public void invalidate() {
 		super.invalidate();
 		setColors(true);
+		PortalWorldData.INSTANCE.remove(new GlobalBlockPos(pos, world));
+		for (BlockPos p : getFrames()) {
+			if (world.getTileEntity(p) instanceof TileBasicFrame) {
+				((TileBasicFrame) world.getTileEntity(p)).setController(null);
+			}
+		}
+		for (BlockPos p : getPortals()) {
+			if (world.getTileEntity(p) instanceof TilePortaal) {
+				((TilePortaal) world.getTileEntity(p)).setController(null);
+			}
+		}
+		deactivate();
 	}
 
 	@Override
@@ -507,7 +547,7 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 			if (world.isRemote)
 				break;
 			String name = NBTHelper.get(nbt, "target", String.class);
-			TileController target = (TileController) PortalWorldData.INSTANCE.getTile(name);
+			TileController target = PortalWorldData.INSTANCE.getTile(name);
 			if (name.equals(targetName))
 				setTarget(null);
 			else if (target != null) {

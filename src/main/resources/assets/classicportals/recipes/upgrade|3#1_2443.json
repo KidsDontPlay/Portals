@@ -1,0 +1,24 @@
+{
+  "result": {
+    "item": "classicportals:upgrade",
+    "data": 3
+  },
+  "ingredients": [
+    {
+      "item": "#INGOTIRON"
+    },
+    {
+      "item": "#DUSTREDSTONE"
+    },
+    {
+      "item": "#NUGGETGOLD"
+    },
+    {
+      "item": "minecraft:redstone_torch"
+    },
+    {
+      "item": "minecraft:stone_button"
+    }
+  ],
+  "type": "forge:ore_shapeless"
+}

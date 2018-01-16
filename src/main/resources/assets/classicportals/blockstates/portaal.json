@@ -1,0 +1,20 @@
+{
+    "forge_marker":1,
+    "defaults":{
+        "textures":{
+            "all":"classicportals:blocks/portaal"
+        },
+        "model":"classicportals:portaal_ns"
+    },
+    "variants":{
+        "axis=z":{
+            "model":"classicportals:portaal_ew"
+        },
+        "axis=x":{
+            "model":"classicportals:portaal_ns"
+        },
+        "axis=y":{
+            "model":"classicportals:portaal_ud"
+        }
+    }
+}

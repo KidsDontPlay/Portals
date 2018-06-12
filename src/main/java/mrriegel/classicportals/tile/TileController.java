@@ -368,62 +368,73 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 	}
 
 	public void teleport(Entity entity) {
+		System.out.println("tele " + entity.getEntityData());
 		if (entity == null || !valid || !active || !isPortalActive(target) || entity.world.isRemote)
 			return;
 		TileController tar = (TileController) target.getTile();
 		if (tar == null || tar.selfLanding == null)
 			return;
-		//		Vec3d motion = new Vec3d(entity.motionX, entity.motionY, entity.motionZ);
 		int need = !ModConfig.energyNeeded ? 0 : target.getDimension() != world.provider.getDimension() ? 100000 : //
 				(int) Math.sqrt(tar.getPos().distanceSq(pos)) * 20;
 		need = Math.min(need, en.getMaxEnergyStored());
-		if (need > en.getEnergyStored())
+		if (need > en.getEnergyStored() && false)
 			return;
-		entity.getEntityData().setBoolean("ported", true);
-		Optional<Entity> op = TeleportationHelper.teleport(entity, tar.getSelfLanding(), target.getDimension());
-		if (op.isPresent()) {
-			en.modifyEnergyStored(-need);
-			entity = op.get();
-			entity.fallDistance = 0f;
-			//			world.playSound(null, entity.posX, entity.posY, entity.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, SoundCategory.BLOCKS, .8f, .8f);
-			if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
-				if (entity instanceof EntityPlayerMP) {
-					EntityPlayerMP player = (EntityPlayerMP) entity;
-					player.rotationYaw = tar.looking.getHorizontalAngle();
-					player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
-				} else
-					entity.rotationYaw = tar.looking.getHorizontalAngle();
-			} else {
-				EnumFacing f = entity.getHorizontalFacing();
-				BlockPos ent = new BlockPos(entity);
-				BlockPos front = ent.offset(f);
-				if (entity.world.getBlockState(front).getCollisionBoundingBox(entity.world, front) != null) {
-					EnumFacing fin = null;
-					for (int i = 0; i < 4; i++) {
-						f = f.rotateY();
-						if (entity.world.getBlockState(ent.offset(f)).getCollisionBoundingBox(entity.world, ent.offset(f)) == null) {
-							fin = f;
-							break;
+		//		entity.getEntityData().setBoolean("ported", true);
+		entity.getEntityData().setBoolean("portForbidden", true);
+		//		if (entity instanceof EntityPlayer)
+		//			try {
+		//				Class<?> c = Class.forName("mcjty.lib.varia.TeleportationTools");
+		//				TeleportationHelper.prepareEntity(entity);
+		//				ReflectionHelper.findMethod(c, "performTeleport", "performTeleport", EntityPlayer.class, int.class, double.class, double.class, double.class, EnumFacing.class).invoke(null, entity, target.getDimension(), tar.getSelfLanding().getX() + .5, tar.getSelfLanding().getY() + .1, tar.getSelfLanding().getZ() + .5, null);
+		//			} catch (Exception e) {
+		//				e.printStackTrace();
+		//			}
+		if (!false) {
+			Optional<Entity> op = TeleportationHelper.teleport(entity, tar.getSelfLanding(), target.getDimension());
+			if (op.isPresent()) {
+				en.modifyEnergyStored(-need);
+				entity = op.get();
+				entity.fallDistance = 0f;
+				//			world.playSound(null, entity.posX, entity.posY, entity.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, SoundCategory.BLOCKS, .8f, .8f);
+				if (tar.getUpgrades().contains(Upgrade.DIRECTION) && tar.looking != null) {
+					if (entity instanceof EntityPlayerMP) {
+						EntityPlayerMP player = (EntityPlayerMP) entity;
+						player.rotationYaw = tar.looking.getHorizontalAngle();
+						player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+					} else
+						entity.rotationYaw = tar.looking.getHorizontalAngle();
+				} else {
+					EnumFacing f = entity.getHorizontalFacing();
+					BlockPos ent = new BlockPos(entity);
+					BlockPos front = ent.offset(f);
+					if (entity.world.getBlockState(front).getCollisionBoundingBox(entity.world, front) != null) {
+						EnumFacing fin = null;
+						for (int i = 0; i < 4; i++) {
+							f = f.rotateY();
+							if (entity.world.getBlockState(ent.offset(f)).getCollisionBoundingBox(entity.world, ent.offset(f)) == null) {
+								fin = f;
+								break;
+							}
+						}
+						if (fin != null) {
+							if (entity instanceof EntityPlayerMP) {
+								EntityPlayerMP player = (EntityPlayerMP) entity;
+								player.rotationYaw = fin.getHorizontalAngle();
+								player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
+							} else
+								entity.rotationYaw = fin.getHorizontalAngle();
 						}
 					}
-					if (fin != null) {
-						if (entity instanceof EntityPlayerMP) {
-							EntityPlayerMP player = (EntityPlayerMP) entity;
-							player.rotationYaw = fin.getHorizontalAngle();
-							player.connection.sendPacket(new SPacketPlayerPosLook(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, Sets.<SPacketPlayerPosLook.EnumFlags> newHashSet(), 1000));
-						} else
-							entity.rotationYaw = fin.getHorizontalAngle();
-					}
 				}
+				//			if (tar.getUpgrades().contains(Upgrade.MOTION))
+				//				if (entity instanceof EntityPlayerMP)
+				//					((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity.getEntityId(), motion.x, motion.y, motion.z));
+				//				else {
+				//					entity.motionX = motion.x;
+				//					entity.motionY = motion.y;
+				//					entity.motionZ = motion.z;
+				//				}
 			}
-			//			if (tar.getUpgrades().contains(Upgrade.MOTION))
-			//				if (entity instanceof EntityPlayerMP)
-			//					((EntityPlayerMP) entity).connection.netManager.sendPacket(new SPacketEntityVelocity(entity.getEntityId(), motion.x, motion.y, motion.z));
-			//				else {
-			//					entity.motionX = motion.x;
-			//					entity.motionY = motion.y;
-			//					entity.motionZ = motion.z;
-			//				}
 		}
 	}
 
@@ -469,7 +480,6 @@ public class TileController extends CommonTile implements IEnergyReceiver {
 					lis.add(active ? TextFormatting.GREEN + "On" : TextFormatting.DARK_RED + "Off");
 					if (targetName != null)
 						lis.add("Target: " + targetName);
-
 					return lis;
 				}
 

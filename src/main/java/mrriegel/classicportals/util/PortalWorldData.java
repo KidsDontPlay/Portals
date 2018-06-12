@@ -10,8 +10,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -20,6 +22,7 @@ import com.google.common.reflect.TypeToken;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import mrriegel.classicportals.ClassicPortals;
+import mrriegel.classicportals.init.ModBlocks;
 import mrriegel.classicportals.network.SyncCapaMessage;
 import mrriegel.classicportals.tile.TileController;
 import mrriegel.limelib.helper.NBTHelper;
@@ -37,9 +40,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
+import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
 
 @EventBusSubscriber(modid = ClassicPortals.MODID)
@@ -110,7 +115,8 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 	public void refreshColors() {
 		frameColors.clear();
 		portalColors.clear();
-		List<TileController> lis = validControllers.stream().map(gp -> (TileController) gp.getTile()).collect(Collectors.toList());
+		List<TileController> lis = validControllers.stream().filter(gp -> gp.getDimension() == FMLClientHandler.instance().getWorldClient().provider.getDimension()).map(gp -> (TileController) FMLClientHandler.instance().getWorldClient().getTileEntity(gp.getPos())).collect(Collectors.toList());
+		lis.removeIf(Objects::isNull);
 		for (TileController t : lis) {
 			for (BlockPos p : t.getFrames())
 				frameColors.put(new GlobalBlockPos(p, t.getWorld()), t.getColorFrame());
@@ -136,11 +142,27 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 		if (event.phase == Phase.END && !event.world.isRemote) {
 			for (int i = 0; i < event.world.loadedEntityList.size(); i++) {
 				Entity e = event.world.loadedEntityList.get(i);
-				if (TeleportationHelper.canTeleport(e))
-					if (e.getEntityData().getInteger("untilPort") > 0) {
-						e.getEntityData().setInteger("untilPort", e.getEntityData().getInteger("untilPort") - 1);
+				if (TeleportationHelper.canTeleport(e)) {
+					//					if (e.getEntityData().getInteger("untilPort") > 0) {
+					//						if (e instanceof EntityPlayer && false)
+					//							System.out.println(e.getEntityData().getInteger("untilPort") + " " + "down");
+					//							e.getEntityData().setInteger("untilPort", e.getEntityData().getInteger("untilPort") - 1);
+					//					}
+					BlockPos o = new BlockPos(e);
+					if (StreamSupport.stream(BlockPos.getAllInBox(o.add(1, 1, 1), o.add(-1, -1, -1)).spliterator(), false).allMatch(p -> e.world.getBlockState(p).getBlock() != ModBlocks.portaal)) {
+						e.getEntityData().setBoolean("portForbidden", false);
+						if (e instanceof EntityPlayer) {
+							//							System.out.println("false");
+						}
 					}
+				}
 			}
+		}
+	}
+
+	@SubscribeEvent
+	public static void tick(PlayerTickEvent event) {
+		if (event.phase == Phase.END && !event.player.world.isRemote) {
 		}
 	}
 
@@ -150,10 +172,10 @@ public class PortalWorldData implements INBTSerializable<NBTTagCompound> {
 		if (e instanceof EntityPlayerMP) {
 			INSTANCE.sync((EntityPlayer) event.getEntity());
 		}
-		if (!event.getWorld().isRemote && TeleportationHelper.canTeleport(e) && e.getEntityData().getBoolean("ported")) {
-			e.getEntityData().setInteger("untilPort", TileController.untilPort);
-			e.getEntityData().removeTag("ported");
-		}
+		//		if (!event.getWorld().isRemote && TeleportationHelper.canTeleport(e) && e.getEntityData().getBoolean("ported")) {
+		//			e.getEntityData().setInteger("untilPort", TileController.untilPort);
+		//			e.getEntityData().removeTag("ported");
+		//		}
 	}
 
 	public static void start(MinecraftServer server) throws IOException {

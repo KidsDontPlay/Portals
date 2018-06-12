@@ -51,7 +51,8 @@ public class ContainerPortal extends CommonContainerTile<TileController> {
 			save.getStacks().set(i, tmp.getStackInSlot(i));
 		}
 		save.markForSync();
-		save.setColors(false);
+		if (playerIn.world.isRemote)
+			save.setColors(false);
 	}
 
 	@Override

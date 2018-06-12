@@ -191,13 +191,16 @@ public class BlockPortaal extends CommonBlockContainer<TilePortaal> {
 			if (worldIn.getTileEntity(pos) instanceof TilePortaal && ((TilePortaal) worldIn.getTileEntity(pos)).getController() != null && worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController()) instanceof TileController) {
 				TileController tile = (TileController) worldIn.getTileEntity(((TilePortaal) worldIn.getTileEntity(pos)).getController());
 				if (tile.getTarget() != null) {
-					if (entityIn.getEntityData().getInteger("untilPort") <= 0) {
+					//					if (entityIn.getEntityData().getInteger("untilPort") <= 0) {
+					//						tile.teleport(entityIn);
+					//					}
+					if (!entityIn.getEntityData().getBoolean("portForbidden")) {
 						tile.teleport(entityIn);
 					}
 				}
 			}
 		}
-		entityIn.getEntityData().setInteger("untilPort", TileController.untilPort);
+		//		entityIn.getEntityData().setInteger("untilPort", TileController.untilPort);
 	}
 
 	@Override
